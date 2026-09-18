@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -110,7 +111,9 @@ app.get('/callback', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'callback.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`\n  🏦 Merchant Payment Tester running at:`);
-  console.log(`     http://localhost:${PORT}\n`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n  🏦 Merchant Payment Tester running`);
+  console.log(`     Listening on : 0.0.0.0:${PORT}`);
+  console.log(`     Pod / Host   : ${os.hostname()}`);
+  console.log(`     Environment  : ${process.env.NODE_ENV || 'production'}\n`);
 });
