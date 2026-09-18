@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // When packaged with pkg, __dirname is a snapshot path.
 // Static assets (public/) must live next to the .exe,
