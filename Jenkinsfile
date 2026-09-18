@@ -5,7 +5,7 @@ pipeline {
         // ── Harbor registry (matches your office format) ──────────────────────
         HARBOR_REGISTRY = 'harbor-citybank.f1soft.com.np'
         HARBOR_PROJECT  = 'bankxp'                           // same project as edge-payment-gateway
-        IMAGE_NAME      = 'merchant-payment-tester'
+        IMAGE_NAME      = 'pgw-client-test'
         // ─────────────────────────────────────────────────────────────────────
 
         // Full image reference: harbor.f1soft.com/merchant/merchant-payment-tester
