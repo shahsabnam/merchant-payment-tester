@@ -5,9 +5,21 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "pkg server.js --targets node18-win-x64 --output dist/merchant-payment-tester.exe --compress GZip"
+  },
+  "pkg": {
+    "scripts": "server.js",
+    "assets": [
+      "public/**/*"
+    ],
+    "targets": ["node18-win-x64"],
+    "outputPath": "dist"
   },
   "dependencies": {
     "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   }
 }

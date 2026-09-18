@@ -5,8 +5,16 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// When packaged with pkg, __dirname is a snapshot path.
+// Static assets (public/) must live next to the .exe,
+// so resolve them from the real executable directory.
+const isPackaged = typeof process.pkg !== 'undefined';
+const PUBLIC_DIR = isPackaged
+  ? path.join(path.dirname(process.execPath), 'public')
+  : path.join(__dirname, 'public');
+
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(PUBLIC_DIR));
 
 const CONTEXT_PATH = '/CityBank/merchant';
 
@@ -81,7 +89,7 @@ app.post('/callback', express.urlencoded({ extended: true }), (req, res) => {
 
   // Read the static callback.html and inject the payload as a JS variable
   // so the page can render immediately without a redirect
-  const htmlPath = path.join(__dirname, 'public', 'callback.html');
+  const htmlPath = path.join(PUBLIC_DIR, 'callback.html');
   let html = fs.readFileSync(htmlPath, 'utf8');
 
   // Inject the server-received payload just before </head>
@@ -99,7 +107,7 @@ app.post('/callback', express.urlencoded({ extended: true }), (req, res) => {
 
 // GET /callback — for direct browser testing via URL query params
 app.get('/callback', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'callback.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'callback.html'));
 });
 
 app.listen(PORT, () => {
