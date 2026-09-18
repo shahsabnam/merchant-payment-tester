@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Registry Configuration (configured as in your office pipeline)
+        // Registry Configuration
         REGISTRY_CREDENTIAL_ID = 'citybankHarbor'
         REGISTRY_URL = 'https://f1hub-uat.citybankplc.com/'
         IMAGE_NAME = 'f1hub-uat.citybankplc.com/f1-project/' + "${env.JOB_NAME}"
@@ -14,31 +14,11 @@ pipeline {
         BRANCH = 'prod'
     }
 
-    parameters {
-        booleanParam(name: 'autoDeployArgo', defaultValue: false, description: 'Auto Deployment by Argocd')
-        booleanParam(name: 'executeTrivyScan', defaultValue: false, description: 'Execute Trivy scan')
-    }
-
-    options {
-        skipDefaultCheckout(true)  // Skip default checkout to prevent 'checkout scm' error
-    }
-
     stages {
-        stage("Clean Workspace") {
+        stage("Checkout") {
             steps {
-                deleteDir()  // Clean the workspace
-            }
-        }
-
-        stage("Git Checkout") {
-            steps {
-                checkout([$class: 'GitSCM', 
-                    branches: [[name: "main"]],  
-                    userRemoteConfigs: [[
-                        url: 'https://gitlab-01.f1soft.com/code-library/pgw-client-test.git', 
-                        credentialsId: 'BankxpDevops'
-                    ]]  
-                ])
+                // Uses the exact SCM credentials configured in your Jenkins job
+                checkout scm
             }
         }
 
@@ -52,7 +32,7 @@ pipeline {
 
         stage('Build Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} -f ${DOCKER_FILE} ${WORKSPACE}"
+                sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} -f ${DOCKER_FILE} ."
             }
         }
 
