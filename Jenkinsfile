@@ -2,109 +2,102 @@ pipeline {
     agent any
 
     environment {
-        // ── Harbor registry (matches your office format) ──────────────────────
-        HARBOR_REGISTRY = 'harbor-citybank.f1soft.com.np'
-        HARBOR_PROJECT  = 'bankxp'                           // same project as edge-payment-gateway
-        IMAGE_NAME      = 'pgw-client-test'
-        // ─────────────────────────────────────────────────────────────────────
+        // Registry Configuration (configured as in your office pipeline)
+        REGISTRY_CREDENTIAL_ID = 'citybankHarbor'
+        REGISTRY_URL = 'https://f1hub-uat.citybankplc.com/'
+        IMAGE_NAME = 'f1hub-uat.citybankplc.com/f1-project/' + "${env.JOB_NAME}"
+        DOCKER_FILE = 'Dockerfile'
+        JEN_HOME = '/root/jenkins/jenkins_home/workspace/$JOB_NAME'
+        TARGET_URL = "${BUILD_URL}" + 'execution/node/3/ws/'
+        NAMESPACE = 'default'
+        REPO_DIR = 'citybank/citybank_manifest'
+        BRANCH = 'prod'
+    }
 
-        // Full image reference: harbor.f1soft.com/merchant/merchant-payment-tester
-        IMAGE_FULL      = "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}"
-        IMAGE_TAG       = "${BUILD_NUMBER}"                  // e.g. :42
-        IMAGE_LATEST    = "${IMAGE_FULL}:latest"
-        IMAGE_VERSIONED = "${IMAGE_FULL}:${IMAGE_TAG}"
+    parameters {
+        booleanParam(name: 'autoDeployArgo', defaultValue: false, description: 'Auto Deployment by Argocd')
+        booleanParam(name: 'executeTrivyScan', defaultValue: false, description: 'Execute Trivy scan')
+    }
+
+    options {
+        skipDefaultCheckout(true)  // Skip default checkout to prevent 'checkout scm' error
     }
 
     stages {
+        stage("Clean Workspace") {
+            steps {
+                deleteDir()  // Clean the workspace
+            }
+        }
 
-        stage('Checkout') {
+        stage("Git Checkout") {
+            steps {
+                checkout([$class: 'GitSCM', 
+                    branches: [[name: "main"]],  
+                    userRemoteConfigs: [[
+                        url: 'https://gitlab-01.f1soft.com/code-library/pgw-client-test.git', 
+                        credentialsId: 'BankxpDevops'
+                    ]]  
+                ])
+            }
+        }
+
+        stage("Build") {
             steps {
                 script {
-                    try {
-                        checkout scm
-                    } catch (Throwable e) {
-                        echo "checkout scm not available in inline mode, checking out directly..."
-                        git branch: 'main', url: 'https://gitlab-01.f1soft.com/code-library/pgw-client-test.git'
-                    }
+                    sh 'npm install --omit=dev'
                 }
             }
         }
 
-        stage('Docker Build') {
+        stage('Build Image') {
             steps {
-                script {
-                    echo "Building image: ${IMAGE_VERSIONED}"
-                    sh "docker build -t ${IMAGE_VERSIONED} -t ${IMAGE_LATEST} ."
-                }
+                sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} -f ${DOCKER_FILE} ${WORKSPACE}"
             }
         }
 
-        stage('Push to Harbor') {
+        stage('Push Image') {
             steps {
-                // 'harbor-credentials' must be added in Jenkins:
-                //   Manage Jenkins → Credentials → (global) → Add
-                //   Kind: Username with password
-                //   ID: harbor-credentials
                 withCredentials([usernamePassword(
-                    credentialsId: 'citybankHarbor',
-                    usernameVariable: 'HARBOR_USER',
-                    passwordVariable: 'HARBOR_PASS'
+                    credentialsId: "${REGISTRY_CREDENTIAL_ID}", 
+                    passwordVariable: 'DOCKER_REGISTRY_PASSWORD', 
+                    usernameVariable: 'DOCKER_REGISTRY_USERNAME'
                 )]) {
-                    sh """
-                        echo \$HARBOR_PASS | docker login ${HARBOR_REGISTRY} -u \$HARBOR_USER --password-stdin
-                        docker push ${IMAGE_VERSIONED}
-                        docker push ${IMAGE_LATEST}
-                        docker logout ${HARBOR_REGISTRY}
-                    """
+                    sh "echo ${DOCKER_REGISTRY_PASSWORD} | docker login -u ${DOCKER_REGISTRY_USERNAME} --password-stdin ${REGISTRY_URL}"
                 }
+                sh "docker push ${IMAGE_NAME}:${BUILD_NUMBER}"
             }
         }
 
-        stage('Print Image ID') {
+        stage('Print Image for Rancher') {
             steps {
                 script {
-                    def imageId = sh(
-                        script: "docker inspect --format='{{.Id}}' ${IMAGE_VERSIONED}",
-                        returnStdout: true
-                    ).trim()
+                    echo "════════════════════════════════════════════════════════════"
+                    echo "  BUILD SUCCESSFUL!"
+                    echo "  USE THIS IMAGE IN RANCHER:"
+                    echo "  ${IMAGE_NAME}:${BUILD_NUMBER}"
+                    echo "════════════════════════════════════════════════════════════"
 
-                    echo "════════════════════════════════════════════"
-                    echo "  IMAGE TAG   : ${IMAGE_VERSIONED}"
-                    echo "  IMAGE ID    : ${imageId}"
-                    echo "  Use on Rancher → Workloads → Image field:"
-                    echo "  ${IMAGE_VERSIONED}"
-                    echo "════════════════════════════════════════════"
-
-                    // Write to a file so it's easy to copy from Jenkins artifacts
                     writeFile file: 'image-id.txt', text: """\
-IMAGE_TAG=${IMAGE_VERSIONED}
-IMAGE_LATEST=${IMAGE_LATEST}
-IMAGE_ID=${imageId}
+IMAGE=${IMAGE_NAME}:${BUILD_NUMBER}
 BUILD_NUMBER=${BUILD_NUMBER}
 """
                 }
-            }
-        }
-
-        stage('Cleanup Local Image') {
-            steps {
-                sh """
-                    docker rmi ${IMAGE_VERSIONED} || true
-                    docker rmi ${IMAGE_LATEST}    || true
-                """
             }
         }
     }
 
     post {
         success {
-            archiveArtifacts artifacts: 'image-id.txt', fingerprint: true
-            echo "✅ Build ${BUILD_NUMBER} pushed successfully."
-            echo "Use image on Rancher: ${IMAGE_VERSIONED}"
+            sh 'docker rmi ${IMAGE_NAME}:${BUILD_NUMBER} || true'
+
+            archiveArtifacts artifacts: 'image-id.txt',
+                onlyIfSuccessful: true,
+                fingerprint: true
         }
+
         failure {
-            echo "❌ Build failed. Check console output above."
+            echo 'The build has failed.'
         }
     }
 }
-
