@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        // ── Update these three values for your Harbor setup ──────────────────
-        HARBOR_REGISTRY = 'harbor.f1soft.com'               // Your Harbor host
-        HARBOR_PROJECT  = 'merchant'                         // Harbor project/namespace
+        // ── Harbor registry (matches your office format) ──────────────────────
+        HARBOR_REGISTRY = 'harbor-citybank.f1soft.com.np'
+        HARBOR_PROJECT  = 'bankxp'                           // same project as edge-payment-gateway
         IMAGE_NAME      = 'merchant-payment-tester'
         // ─────────────────────────────────────────────────────────────────────
 
@@ -100,3 +100,4 @@ BUILD_NUMBER=${BUILD_NUMBER}
         }
     }
 }
+
