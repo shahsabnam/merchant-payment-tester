@@ -3,9 +3,9 @@ pipeline {
 
     environment {
         // Registry Configuration (configured as in your office pipeline)
-        REGISTRY_CREDENTIAL_ID = 'citybankHarbor'
-        REGISTRY_URL = 'https://f1hub-uat.citybankplc.com/'
-        IMAGE_NAME = 'f1hub-uat.citybankplc.com/f1-project/' + "${env.JOB_NAME}"
+        EGISTRY_CREDENTIAL_ID = 'haborRegistry'
+        REGISTRY_URL = 'https://harbor-citybank.f1soft.com.np/'
+        IMAGE_NAME = 'harbor-citybank.f1soft.com.np/bankxp/' + "${env.JOB_NAME}"
         DOCKER_FILE = 'Dockerfile'
         JEN_HOME = '/root/jenkins/jenkins_home/workspace/$JOB_NAME'
         TARGET_URL = "${BUILD_URL}" + 'execution/node/3/ws/'
