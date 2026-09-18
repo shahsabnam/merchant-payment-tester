@@ -3,6 +3,9 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
+// Disable strict TLS rejection for bank UAT / test environments with self-signed / internal certs
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -56,13 +59,37 @@ app.post('/api/gettoken', async (req, res) => {
       body: JSON.stringify({ loginname, login_password })
     });
 
-    const data = await response.json();
-    res.json(data);
+    const contentType = response.headers.get('content-type') || '';
+
+    // If gateway returns JSON (success or structured error)
+    if (contentType.includes('application/json')) {
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
+    // If gateway returns HTML or other format (e.g. HTTP 500 error page from CityBank)
+    const rawText = await response.text();
+    console.error(`[${env}] Gateway returned HTTP ${response.status} (${contentType}):`, rawText.slice(0, 300));
+
+    let cleanMsg = `CityBank ${env} gateway returned HTTP ${response.status}`;
+    if (rawText.includes('unable to fetch this page') || response.status === 500) {
+      cleanMsg = `CityBank ${env} server error (HTTP 500): "Unable to fetch this page right now. Please try again later." (Bank gateway is temporarily down)`;
+    }
+
+    return res.status(response.status >= 400 ? response.status : 502).json({
+      status: 'error',
+      httpStatus: response.status,
+      message: cleanMsg
+    });
+
   } catch (error) {
-    console.error(`[${env}] Token API error:`, error.message);
+    const causeMsg = error.cause ? ` (${error.cause.code || error.cause.message || error.cause})` : '';
+    console.error(`[${env}] Token API network error:`, error.message, error.cause);
+
     res.status(502).json({
       status: 'error',
-      message: `Failed to reach CityBank API (${env}): ` + error.message
+      message: `Failed to reach CityBank API (${env}): ${error.message}${causeMsg}`,
+      hint: `Target URL: ${tokenUrl}. If running inside Kubernetes pod, check that the pod has egress/internet access or check bank gateway status.`
     });
   }
 });
