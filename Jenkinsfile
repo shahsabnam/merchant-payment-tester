@@ -46,7 +46,7 @@ pipeline {
                 //   Kind: Username with password
                 //   ID: harbor-credentials
                 withCredentials([usernamePassword(
-                    credentialsId: 'harbor-credentials',
+                    credentialsId: 'citybankHarbor',
                     usernameVariable: 'HARBOR_USER',
                     passwordVariable: 'HARBOR_PASS'
                 )]) {
