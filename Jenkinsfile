@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Registry Configuration
+        // Registry Configuration (configured as in your office pipeline)
         REGISTRY_CREDENTIAL_ID = 'citybankHarbor'
         REGISTRY_URL = 'https://f1hub-uat.citybankplc.com/'
         IMAGE_NAME = 'f1hub-uat.citybankplc.com/f1-project/' + "${env.JOB_NAME}"
@@ -15,23 +15,9 @@ pipeline {
     }
 
     stages {
-        stage("Checkout") {
-            steps {
-                // Uses the exact SCM credentials configured in your Jenkins job
-                checkout scm
-            }
-        }
-
-        stage("Build") {
-            steps {
-                script {
-                    sh 'npm install --omit=dev'
-                }
-            }
-        }
-
         stage('Build Image') {
             steps {
+                // Dockerfile handles npm install inside the container (node:20-alpine)
                 sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} -f ${DOCKER_FILE} ."
             }
         }
