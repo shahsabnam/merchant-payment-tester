@@ -19,7 +19,14 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
+                script {
+                    try {
+                        checkout scm
+                    } catch (Throwable e) {
+                        echo "checkout scm not available in inline mode, checking out directly..."
+                        git branch: 'main', url: 'https://gitlab-01.f1soft.com/code-library/pgw-client-test.git'
+                    }
+                }
             }
         }
 
