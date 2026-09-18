@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Registry Configuration (configured as in your office pipeline)
-        EGISTRY_CREDENTIAL_ID = 'haborRegistry'
+        REGISTRY_CREDENTIAL_ID = 'haborRegistry'
         REGISTRY_URL = 'https://harbor-citybank.f1soft.com.np/'
         IMAGE_NAME = 'harbor-citybank.f1soft.com.np/bankxp/' + "${env.JOB_NAME}"
         DOCKER_FILE = 'Dockerfile'
