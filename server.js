@@ -19,6 +19,7 @@ const PUBLIC_DIR = isPackaged
 
 app.use(express.json());
 app.use(express.static(PUBLIC_DIR));
+app.use('/pgwtester', express.static(PUBLIC_DIR));
 
 const CONTEXT_PATH = '/CityBank/merchant';
 
@@ -28,8 +29,8 @@ const environments = {
   LOCAL: 'http://localhost:9083/merchant-gateway'
 };
 
-// Proxy endpoint for gettoken API (avoids CORS issues)
-app.post('/api/gettoken', async (req, res) => {
+// Proxy endpoint for gettoken API (supports both root and /pgwtester context path)
+app.post(['/api/gettoken', '/pgwtester/api/gettoken'], async (req, res) => {
   const { loginname, login_password, channel, env = 'DEV' } = req.body;
 
   if (!loginname || !login_password) {
@@ -107,12 +108,12 @@ app.post('/api/gettoken', async (req, res) => {
 //   merchanRefNo=DEV
 //   transactionId=NOV24-39220b63-5409-445d-8b51-016693cfb635
 //   txnamount=23
-// =============================================================================
-app.post('/callback', express.urlencoded({ extended: true }), (req, res) => {
+// POST callback from CityBank gateway (supports both /callback for DEV and /pgwtester/callback for UAT)
+app.post(['/callback', '/pgwtester/callback'], express.urlencoded({ extended: true }), (req, res) => {
   const payload = req.body;                  // parsed form data from Citytouch
   const receivedAt = new Date().toISOString();
 
-  console.log(`\n[CALLBACK] Payment result received at ${receivedAt}`);
+  console.log(`\n[CALLBACK] Payment result received at ${receivedAt} on ${req.originalUrl}`);
   console.log('[CALLBACK] Payload:', payload);
 
   // Read the static callback.html and inject the payload as a JS variable
@@ -133,9 +134,14 @@ app.post('/callback', express.urlencoded({ extended: true }), (req, res) => {
   res.send(html);
 });
 
-// GET /callback — for direct browser testing via URL query params
-app.get('/callback', (req, res) => {
+// GET /callback or /pgwtester/callback — for direct browser testing via URL query params
+app.get(['/callback', '/pgwtester/callback'], (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'callback.html'));
+});
+
+// GET /pgwtester or /pgwtester/ — serves main page when accessed under /pgwtester context path
+app.get(['/pgwtester', '/pgwtester/'], (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {

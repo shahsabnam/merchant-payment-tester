@@ -30,19 +30,22 @@ const envPresets = {
         loginname: 'SHARETRIP',
         login_password: 'SHTrip#12345678',
         channel: 'WEB',
-        merchanRefNo: 'UAT'
+        merchanRefNo: 'UAT',
+        resendpoint: 'https://k2.citybankplc.com/pgwtester/callback'
     },
     DEV: {
-        loginname: 'SHARETRIP',
-        login_password: '',
-        channel: 'MOBILE',
-        merchanRefNo: 'DEV'
+        loginname: 'NOV24',
+        login_password: 'NOV24Merchant@1234',
+        channel: 'WEB',
+        merchanRefNo: 'DEV',
+        resendpoint: null
     },
     LOCAL: {
         loginname: 'daraz',
         login_password: 'Abc@1234',
         channel: 'WEB',
-        merchanRefNo: 'LOCAL'
+        merchanRefNo: 'LOCAL',
+        resendpoint: null
     }
 };
 
@@ -58,6 +61,18 @@ const loginPasswordInput = document.getElementById('login_password');
 const merchanRefNoInput = document.getElementById('merchanRefNo');
 const resendpointInput = document.getElementById('resendpoint');
 
+function getMerchantCallbackUrl(env = selectedEnv) {
+    if (env === 'UAT') {
+        return 'https://k2.citybankplc.com/pgwtester/callback';
+    }
+    // DEV and LOCAL: use current origin callback
+    const origin = window.location.origin;
+    if (origin && origin !== 'null' && !origin.startsWith('file:') && !origin.includes('k2.citybankplc.com')) {
+        return `${origin}/callback`;
+    }
+    return 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
+}
+
 function applyPreset(env) {
     const preset = envPresets[env];
     if (preset) {
@@ -70,20 +85,14 @@ function applyPreset(env) {
                 b.classList.toggle('active', b.dataset.channel === preset.channel);
             });
         }
+        if (resendpointInput) {
+            resendpointInput.value = preset.resendpoint || getMerchantCallbackUrl(env);
+        }
     }
-}
-
-// Auto-configure callback URL: always point to our merchant tester's /callback endpoint
-function getMerchantCallbackUrl() {
-    const origin = window.location.origin;
-    if (origin && origin !== 'null' && !origin.startsWith('file:')) {
-        return `${origin}/callback`;
-    }
-    return 'https://merchant-payment-tester.onrender.com/callback';
 }
 
 if (resendpointInput) {
-    resendpointInput.value = getMerchantCallbackUrl();
+    resendpointInput.value = getMerchantCallbackUrl(selectedEnv);
 }
 
 // Initialize
@@ -256,13 +265,22 @@ step2Indicator.addEventListener('click', () => {
 paymentForm.addEventListener('submit', (e) => {
     let resVal = (resendpointInput.value || '').trim();
 
-    // If empty or user accidentally put CityBank's gateway URL or a relative path
-    if (!resVal || resVal.includes('citybankplc.com') || resVal.includes('edge-payment-gateway') || resVal.startsWith('/') || !resVal.startsWith('http')) {
-        const correctUrl = getMerchantCallbackUrl();
-        resendpointInput.value = correctUrl;
-        console.warn(`[PaymentForm] Auto-corrected resendpoint from '${resVal}' to '${correctUrl}'`);
-        showToast('Auto-set Response Endpoint to this tester callback', 'info');
+    if (selectedEnv === 'UAT') {
+        // For UAT: ensure callback points to https://k2.citybankplc.com/pgwtester/callback
+        if (!resVal || resVal === 'https://k2.citybankplc.com/callback' || resVal === '/callback' || !resVal.includes('/pgwtester/callback')) {
+            resendpointInput.value = 'https://k2.citybankplc.com/pgwtester/callback';
+            console.log('[PaymentForm] Set UAT resendpoint to https://k2.citybankplc.com/pgwtester/callback');
+        }
+    } else {
+        // For DEV: keep same mechanism as it was for DEV
+        if (!resVal || resVal.startsWith('/') || !resVal.startsWith('http')) {
+            const correctUrl = getMerchantCallbackUrl(selectedEnv);
+            resendpointInput.value = correctUrl;
+            console.log(`[PaymentForm] Set DEV resendpoint to ${correctUrl}`);
+        }
     }
+});
+
 // ===== KEYBOARD SHORTCUT =====
 document.addEventListener('keydown', (e) => {
     // Ctrl/Cmd + Enter to submit the active form

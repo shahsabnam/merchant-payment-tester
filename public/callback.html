@@ -531,6 +531,7 @@
     };
 
     // ── Render Main Page Background Content ──────────────────────────────────
+    const homeUrl = window.location.pathname.includes('/pgwtester') ? '/pgwtester/' : '/';
     const main = document.getElementById('main');
     const now = new Date(receivedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium', hour12: true });
 
@@ -584,7 +585,7 @@
         <button type="button" class="btn btn-dialogue" onclick="openModal()">
           💬 View Dialogue Popup
         </button>
-        <a href="/" class="btn btn-primary">← Test Another Payment</a>
+        <a href="${homeUrl}" class="btn btn-primary">← Test Another Payment</a>
       </div>
     `;
 
@@ -636,7 +637,7 @@
 
       modalActions.innerHTML = `
         <button type="button" class="btn btn-ghost" onclick="closeModal()">Close</button>
-        <a href="/" class="btn btn-primary">Done / Return</a>
+        <a href="${homeUrl}" class="btn btn-primary">Done / Return</a>
       `;
     }
 
