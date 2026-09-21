@@ -73,14 +73,17 @@ function applyPreset(env) {
     }
 }
 
-// Auto-configure callback URL: use current origin if hosted (e.g. Render), or default to Render URL
-if (resendpointInput) {
-    const currentOrigin = window.location.origin;
-    if (currentOrigin && currentOrigin !== 'null' && !currentOrigin.startsWith('file:') && !currentOrigin.includes('localhost')) {
-        resendpointInput.value = `${currentOrigin}/callback`;
-    } else {
-        resendpointInput.value = 'https://merchant-payment-tester.onrender.com/callback';
+// Auto-configure callback URL: always point to our merchant tester's /callback endpoint
+function getMerchantCallbackUrl() {
+    const origin = window.location.origin;
+    if (origin && origin !== 'null' && !origin.startsWith('file:')) {
+        return `${origin}/callback`;
     }
+    return 'https://merchant-payment-tester.onrender.com/callback';
+}
+
+if (resendpointInput) {
+    resendpointInput.value = getMerchantCallbackUrl();
 }
 
 // Initialize
@@ -249,6 +252,17 @@ step2Indicator.addEventListener('click', () => {
     }
 });
 
+// ===== PAYMENT FORM SUBMISSION GUARD =====
+paymentForm.addEventListener('submit', (e) => {
+    let resVal = (resendpointInput.value || '').trim();
+
+    // If empty or user accidentally put CityBank's gateway URL or a relative path
+    if (!resVal || resVal.includes('citybankplc.com') || resVal.includes('edge-payment-gateway') || resVal.startsWith('/') || !resVal.startsWith('http')) {
+        const correctUrl = getMerchantCallbackUrl();
+        resendpointInput.value = correctUrl;
+        console.warn(`[PaymentForm] Auto-corrected resendpoint from '${resVal}' to '${correctUrl}'`);
+        showToast('Auto-set Response Endpoint to this tester callback', 'info');
+    }
 // ===== KEYBOARD SHORTCUT =====
 document.addEventListener('keydown', (e) => {
     // Ctrl/Cmd + Enter to submit the active form
@@ -256,7 +270,7 @@ document.addEventListener('keydown', (e) => {
         if (paymentPanel.classList.contains('disabled')) {
             tokenForm.requestSubmit();
         } else {
-            document.getElementById('paymentForm').requestSubmit();
+            paymentForm.requestSubmit();
         }
     }
 });
