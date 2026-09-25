@@ -20,7 +20,7 @@ const paymentForm = document.getElementById('paymentForm');
 const CONTEXT_PATH = '/CityBank/merchant';
 
 const baseUrls = {
-    DEV: 'http://edge-payment-gateway.10.13.134.14.nip.io',
+    DEV: 'https://k2prod.citybankplc.com/citytouch/',
     UAT: 'https://k2.citybankplc.com/merchant-gateway',
     LOCAL: 'http://localhost:9083/merchant-gateway'
 };
