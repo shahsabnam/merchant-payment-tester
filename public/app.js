@@ -52,7 +52,9 @@ const envPresets = {
 const getPaymentUrl = (env) => `${baseUrls[env] || baseUrls.DEV}${CONTEXT_PATH}/userlogin`;
 
 // ===== STATE =====
-let selectedChannel = 'WEB';
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let selectedChannel = isMobileDevice ? 'MOBILE' : 'WEB';
+let userExplicitChannel = false;
 let selectedEnv = 'UAT';
 let tokens = [];
 
@@ -73,18 +75,28 @@ function getMerchantCallbackUrl(env = selectedEnv) {
     return 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
 }
 
+function setChannel(channel, isUserAction = false) {
+    selectedChannel = channel;
+    if (isUserAction) {
+        userExplicitChannel = true;
+    }
+    channelBtns.forEach(b => {
+        b.classList.toggle('active', b.dataset.channel === channel);
+    });
+}
+
 function applyPreset(env) {
     const preset = envPresets[env];
     if (preset) {
         if (loginnameInput && preset.loginname) loginnameInput.value = preset.loginname;
         if (loginPasswordInput && preset.login_password) loginPasswordInput.value = preset.login_password;
         if (merchanRefNoInput && preset.merchanRefNo) merchanRefNoInput.value = preset.merchanRefNo;
-        if (preset.channel) {
-            selectedChannel = preset.channel;
-            channelBtns.forEach(b => {
-                b.classList.toggle('active', b.dataset.channel === preset.channel);
-            });
+        
+        // Auto-select MOBILE on mobile devices unless user explicitly switched to WEB
+        if (!userExplicitChannel) {
+            setChannel(isMobileDevice ? 'MOBILE' : (preset.channel || 'WEB'));
         }
+
         if (resendpointInput) {
             resendpointInput.value = preset.resendpoint || getMerchantCallbackUrl(env);
         }
@@ -119,9 +131,13 @@ envTabs.forEach(tab => {
 // ===== CHANNEL SELECTOR =====
 channelBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-        channelBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedChannel = btn.dataset.channel;
+        const channel = btn.dataset.channel;
+        setChannel(channel, true);
+        if (channel === 'MOBILE') {
+            showToast('📱 Channel set to MOBILE (Triggers Citytouch App)', 'info');
+        } else {
+            showToast('🌐 Channel set to WEB (Opens Browser Portal)', 'info');
+        }
     });
 });
 

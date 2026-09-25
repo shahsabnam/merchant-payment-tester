@@ -42,9 +42,12 @@ app.post(['/api/gettoken', '/pgwtester/api/gettoken'], async (req, res) => {
 
   const baseUrl = environments[env] || environments.DEV;
   const tokenUrl = `${baseUrl}${CONTEXT_PATH}/gettoken`;
+  const targetChannel = channel || 'MOBILE';
+
+  console.log(`[${env}] Requesting token: user="${loginname}", channel="${targetChannel}"`);
 
   const headers = {
-    'x-request-channel': channel || 'MOBILE',
+    'x-request-channel': targetChannel,
     'Content-Type': 'application/json'
   };
 
