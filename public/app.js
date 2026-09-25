@@ -175,7 +175,11 @@ tokenForm.addEventListener('submit', async (e) => {
     responseBox.style.display = 'none';
 
     try {
-        const res = await fetch('/api/gettoken', {
+        const tokenApiEndpoint = window.location.pathname.includes('/pgwtester')
+            ? '/pgwtester/api/gettoken'
+            : '/api/gettoken';
+
+        const res = await fetch(tokenApiEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ loginname, login_password, channel: selectedChannel, env: selectedEnv })
