@@ -67,10 +67,12 @@ function getMerchantCallbackUrl(env = selectedEnv) {
     if (env === 'UAT') {
         return 'https://k2.citybankplc.com/pgwtester/callback';
     }
-    // DEV and LOCAL: use current origin callback
+    // DEV and LOCAL: use current origin callback with basePath if hosted under a sub-path
     const origin = window.location.origin;
+    const pathname = window.location.pathname;
+    const basePath = pathname.includes('/pgwtester') ? '/pgwtester' : '';
     if (origin && origin !== 'null' && !origin.startsWith('file:') && !origin.includes('k2.citybankplc.com')) {
-        return `${origin}/callback`;
+        return `${origin}${basePath}/callback`;
     }
     return 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
 }
