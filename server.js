@@ -150,9 +150,13 @@ app.get('/pgwtester/', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n  🏦 Merchant Payment Tester running`);
-  console.log(`     Listening on : 0.0.0.0:${PORT}`);
-  console.log(`     Pod / Host   : ${os.hostname()}`);
-  console.log(`     Environment  : ${process.env.NODE_ENV || 'production'}\n`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n  🏦 Merchant Payment Tester running`);
+    console.log(`     Listening on : 0.0.0.0:${PORT}`);
+    console.log(`     Pod / Host   : ${os.hostname()}`);
+    console.log(`     Environment  : ${process.env.NODE_ENV || 'production'}\n`);
+  });
+}
+
+module.exports = app;
