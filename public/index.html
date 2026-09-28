@@ -192,6 +192,39 @@
     </div>
   </main>
 
+  <!-- Deep Link Modal -->
+  <div id="deepLinkModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📱 Open Citytouch Mobile App</h3>
+        <button type="button" class="modal-close" onclick="closeDeepLinkModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.5;">
+          Select a method below to trigger your installed <strong>Citytouch</strong> application:
+        </p>
+        
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a id="btnScheme" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;">
+            🚀 Custom Scheme (citybank://)
+          </a>
+          <a id="btnIntent" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:#2563eb;padding:12px;font-size:13px;font-weight:600;">
+            ⚡ Android Intent (Force App Launch)
+          </a>
+          <a id="btnK2Prod" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:#4338ca;padding:12px;font-size:13px;font-weight:600;">
+            🔗 k2prod Deep Link
+          </a>
+          <a id="btnCitytouch" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:#0d9488;padding:12px;font-size:13px;font-weight:600;">
+            🏦 citytouch.com.bd App Link
+          </a>
+          <a id="btnWebPortal" href="#" target="_blank" class="btn" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:#334155;color:#fff;padding:12px;font-size:13px;font-weight:600;">
+            🌐 Open Web Browser Portal
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
   <script>
     // Register Service Worker for PWA

@@ -283,8 +283,20 @@ step2Indicator.addEventListener('click', () => {
     }
 });
 
-// ===== PAYMENT FORM SUBMISSION GUARD =====
-paymentForm.addEventListener('submit', (e) => {
+// ===== DEEP LINK MODAL =====
+function closeDeepLinkModal() {
+    const modal = document.getElementById('deepLinkModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function getUserloginUrl() {
+    return window.location.pathname.includes('/pgwtester')
+        ? '/pgwtester/api/userlogin'
+        : '/api/userlogin';
+}
+
+// ===== PAYMENT FORM SUBMISSION GUARD & APP LAUNCHER =====
+paymentForm.addEventListener('submit', async (e) => {
     let resVal = (resendpointInput.value || '').trim();
 
     if (selectedEnv === 'UAT') {
@@ -299,6 +311,65 @@ paymentForm.addEventListener('submit', (e) => {
             const correctUrl = getMerchantCallbackUrl(selectedEnv);
             resendpointInput.value = correctUrl;
             console.log(`[PaymentForm] Set DEV resendpoint to ${correctUrl}`);
+        }
+    }
+
+    // If channel is MOBILE, handle deep link app launching
+    if (selectedChannel === 'MOBILE') {
+        e.preventDefault();
+
+        const paymentBtn = document.getElementById('paymentBtn');
+        const originalBtnText = paymentBtn.innerHTML;
+        paymentBtn.disabled = true;
+        paymentBtn.innerHTML = '<div class="spinner"></div> Connecting to Gateway...';
+
+        try {
+            const payload = {
+                transactionId: transactionIdInput.value.trim(),
+                merchanRefNo: merchanRefNoInput.value.trim(),
+                txnamount: document.getElementById('txnamount').value.trim(),
+                servicetype: document.getElementById('servicetype').value.trim(),
+                serviceid: document.getElementById('serviceid').value.trim(),
+                resendpoint: resendpointInput.value.trim(),
+                env: selectedEnv
+            };
+
+            const res = await fetch(getUserloginUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (data.status === 'success' && data.appLinks) {
+                // Populate deep link modal buttons
+                document.getElementById('btnScheme').href = data.appLinks.scheme;
+                document.getElementById('btnIntent').href = data.appLinks.androidIntentK2;
+                document.getElementById('btnK2Prod').href = data.appLinks.k2prod;
+                document.getElementById('btnCitytouch').href = data.appLinks.citytouch;
+                document.getElementById('btnWebPortal').href = data.webUrl || '#';
+
+                // Display modal
+                document.getElementById('deepLinkModal').style.display = 'flex';
+                showToast('🚀 Launching Citytouch App...', 'info');
+
+                // Attempt auto-launch via custom scheme
+                setTimeout(() => {
+                    window.location.href = data.appLinks.scheme;
+                }, 300);
+            } else {
+                showToast('Gateway error: ' + (data.message || 'Unknown error'), 'error');
+                // Fallback to standard form submit
+                paymentForm.submit();
+            }
+        } catch (err) {
+            console.error('Payment launch error:', err);
+            showToast('Network error — opening in browser...', 'info');
+            paymentForm.submit();
+        } finally {
+            paymentBtn.disabled = false;
+            paymentBtn.innerHTML = originalBtnText;
         }
     }
 });

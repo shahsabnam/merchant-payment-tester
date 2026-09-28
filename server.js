@@ -98,6 +98,73 @@ app.post(['/api/gettoken', '/pgwtester/api/gettoken'], async (req, res) => {
   }
 });
 
+// Proxy endpoint for userlogin API (to extract pgwtoken and generate deep links)
+app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ extended: true }), express.json(), async (req, res) => {
+  const { transactionId, merchanRefNo, txnamount, servicetype, serviceid, resendpoint, env = 'DEV' } = req.body;
+
+  if (!transactionId) {
+    return res.status(400).json({ status: 'error', message: 'transactionId is required' });
+  }
+
+  const baseUrl = environments[env] || environments.DEV;
+  const loginUrl = `${baseUrl}${CONTEXT_PATH}/userlogin`;
+
+  const params = new URLSearchParams({
+    transactionId,
+    merchanRefNo: merchanRefNo || env,
+    txnamount: String(txnamount || '10'),
+    servicetype: servicetype || 'PAYMENT',
+    serviceid: serviceid || '67',
+    resendpoint: resendpoint || 'https://k2.citybankplc.com/pgwtester/callback'
+  });
+
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'x-request-channel': 'MOBILE'
+  };
+
+  if (env === 'LOCAL') {
+    headers['Cookie'] = 'JSESSIONID=81C02F40AD1040FBBADC25156E655D38';
+  }
+
+  try {
+    const response = await fetch(loginUrl, {
+      method: 'POST',
+      headers,
+      body: params.toString(),
+      redirect: 'manual'
+    });
+
+    const location = response.headers.get('location') || '';
+    const match = location.match(/[?&]pgwtoken=([^&]+)/);
+    const pgwtoken = match ? decodeURIComponent(match[1]) : '';
+    const encodedToken = match ? match[1] : '';
+
+    console.log(`[${env}] userlogin proxy called. Location: ${location.slice(0, 100)}, pgwtoken extracted: ${pgwtoken ? 'YES' : 'NO'}`);
+
+    return res.json({
+      status: 'success',
+      pgwtoken,
+      webUrl: location,
+      appLinks: {
+        scheme: `citybank://citybank.com?pgwtoken=${encodedToken}`,
+        schemePath: `citybank://citybank.com/merchant-gateway/signin?pgwtoken=${encodedToken}`,
+        androidIntentScheme: `intent://citybank.com?pgwtoken=${encodedToken}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`,
+        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?pgwtoken=${encodedToken}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
+        k2prod: `https://k2prod.citybankplc.com/merchant-gateway/signin?pgwtoken=${encodedToken}`,
+        citytouch: `https://citytouch.com.bd/merchant-gateway/signin?pgwtoken=${encodedToken}`,
+        cityRedirect: `https://city.redirect.com?pgwtoken=${encodedToken}`
+      }
+    });
+  } catch (error) {
+    console.error(`[${env}] userlogin proxy error:`, error.message);
+    return res.status(502).json({
+      status: 'error',
+      message: `Failed to connect to gateway: ${error.message}`
+    });
+  }
+});
+
 // =============================================================================
 // MERCHANT CALLBACK — Citytouch POSTs payment result here after user pays
 //
