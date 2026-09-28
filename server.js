@@ -9,17 +9,6 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Enable CORS for all incoming requests (payment gateway redirects, cross-origin callbacks, preflight)
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
 // When packaged with pkg, __dirname is a snapshot path.
 // Static assets (public/) must live next to the .exe,
 // so resolve them from the real executable directory.
@@ -109,138 +98,6 @@ app.post(['/api/gettoken', '/pgwtester/api/gettoken'], async (req, res) => {
   }
 });
 
-// Proxy endpoint for userlogin API (to extract pgwtoken and generate deep links)
-app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ extended: true }), express.json(), async (req, res) => {
-  const { transactionId, merchanRefNo, txnamount, servicetype, serviceid, resendpoint, env = 'DEV' } = req.body;
-
-  if (!transactionId) {
-    return res.status(400).json({ status: 'error', message: 'transactionId is required' });
-  }
-
-  const defaultResEndpoint = env === 'UAT'
-    ? 'https://merchant-payment-tester.vercel.app/callback'
-    : 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
-
-  // resendpoint is optional. Only use default if resendpoint is undefined (not sent)
-  // If explicitly passed as empty string or null, respect user choice and DO NOT autofill!
-  let finalResEndpoint = (resendpoint !== undefined && resendpoint !== null) ? String(resendpoint).trim() : defaultResEndpoint;
-
-  // Protect against loops to CityBank's own domain
-  if (finalResEndpoint.includes('k2prod.citybankplc.com') || finalResEndpoint.includes('k2.citybankplc.com')) {
-    finalResEndpoint = '';
-  }
-
-  const finalMerchantRefNo = merchanRefNo || (env === 'UAT' ? 'UAT' : 'DEV');
-  const finalServiceType = servicetype || 'DARAZ';
-  const finalServiceId = serviceid || 'DARAZ';
-  const finalTxnAmount = String(txnamount || '23');
-
-  const baseUrl = environments[env] || environments.DEV;
-  const loginUrl = `${baseUrl}${CONTEXT_PATH}/userlogin`;
-
-  const params = new URLSearchParams({
-    transactionId,
-    merchanRefNo: finalMerchantRefNo,
-    txnamount: finalTxnAmount,
-    servicetype: finalServiceType,
-    serviceid: finalServiceId,
-    resendpoint: finalResEndpoint
-  });
-
-  const headers = {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'x-request-channel': 'MOBILE'
-  };
-
-  if (env === 'LOCAL') {
-    headers['Cookie'] = 'JSESSIONID=81C02F40AD1040FBBADC25156E655D38';
-  }
-
-  try {
-    const response = await fetch(loginUrl, {
-      method: 'POST',
-      headers,
-      body: params.toString(),
-      redirect: 'manual'
-    });
-
-    const location = response.headers.get('location') || '';
-    const match = location.match(/[?&]pgwtoken=([^&]+)/);
-    const pgwtoken = match ? decodeURIComponent(match[1]) : '';
-
-    console.log(`[${env}] userlogin proxy called. Location: ${location.slice(0, 100)}, pgwtoken extracted: ${pgwtoken ? 'YES' : 'NO'}`);
-
-    const queryParams = new URLSearchParams({
-      pgwtoken: pgwtoken || '',
-      transactionId: transactionId,
-      merchanRefNo: finalMerchantRefNo,
-      txnamount: finalTxnAmount,
-      servicetype: finalServiceType,
-      serviceid: finalServiceId,
-      resendpoint: finalResEndpoint
-    }).toString();
-
-    // Use custom scheme citybank:// for both DEV and UAT so Citytouch app runs in merchant checkout mode and triggers return to resendpoint
-    const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatHttpsLink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
-    const targetDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-
-    return res.json({
-      status: 'success',
-      pgwtoken,
-      webUrl: location,
-      targetDeeplink,
-      appLinks: {
-        targetDeeplink,
-        devDeeplink,
-        uatDeeplink,
-        uatHttpsLink,
-        schemePath: devDeeplink,
-        k2prod: uatHttpsLink,
-        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
-        androidIntentScheme: `intent://citybank.com/merchant-gateway/signin?${queryParams}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`,
-        schemeLink: `citybank://citybank.com/citytouch/link?${queryParams}`,
-        k2prodLink: `https://k2prod.citybankplc.com/citytouch/link?${queryParams}`,
-        citytouch: `https://citytouch.com.bd/merchant-gateway/signin?${queryParams}`,
-        cityRedirect: `https://city.redirect.com?${queryParams}`
-      }
-    });
-  } catch (error) {
-    console.error(`[${env}] userlogin proxy error:`, error.message);
-    const queryParams = new URLSearchParams({
-      pgwtoken: '',
-      transactionId: transactionId,
-      merchanRefNo: finalMerchantRefNo,
-      txnamount: finalTxnAmount,
-      servicetype: finalServiceType,
-      serviceid: finalServiceId,
-      resendpoint: finalResEndpoint
-    }).toString();
-
-    const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatHttpsLink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
-    const targetDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-
-    return res.json({
-      status: 'warning',
-      message: `Gateway unreachable (${error.message}). Generated fallback deeplink.`,
-      targetDeeplink,
-      appLinks: {
-        targetDeeplink,
-        devDeeplink,
-        uatDeeplink,
-        uatHttpsLink,
-        schemePath: devDeeplink,
-        k2prod: uatHttpsLink,
-        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
-        androidIntentScheme: `intent://citybank.com/merchant-gateway/signin?${queryParams}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`
-      }
-    });
-  }
-});
-
 // =============================================================================
 // MERCHANT CALLBACK — Citytouch POSTs payment result here after user pays
 //
@@ -255,7 +112,7 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
 //   transactionId=NOV24-39220b63-5409-445d-8b51-016693cfb635
 //   txnamount=23
 // POST callback from CityBank gateway (supports both /callback for DEV and /pgwtester/callback for UAT)
-app.post(['/callback', '/pgwtester/callback'], express.urlencoded({ extended: true }), express.json(), (req, res) => {
+app.post(['/callback', '/pgwtester/callback'], express.urlencoded({ extended: true }), (req, res) => {
   const payload = req.body;                  // parsed form data from Citytouch
   const receivedAt = new Date().toISOString();
 
@@ -286,17 +143,16 @@ app.get(['/callback', '/pgwtester/callback'], (req, res) => {
 });
 
 // GET /pgwtester or /pgwtester/ — serves main page when accessed under /pgwtester context path
-app.get(['/pgwtester', '/pgwtester/'], (req, res) => {
+app.get('/pgwtester', (req, res) => {
+  res.redirect(301, '/pgwtester/');
+});
+app.get('/pgwtester/', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n  🏦 Merchant Payment Tester running`);
-    console.log(`     Listening on : 0.0.0.0:${PORT}`);
-    console.log(`     Pod / Host   : ${os.hostname()}`);
-    console.log(`     Environment  : ${process.env.NODE_ENV || 'production'}\n`);
-  });
-}
-
-module.exports = app;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n  🏦 Merchant Payment Tester running`);
+  console.log(`     Listening on : 0.0.0.0:${PORT}`);
+  console.log(`     Pod / Host   : ${os.hostname()}`);
+  console.log(`     Environment  : ${process.env.NODE_ENV || 'production'}\n`);
+});

@@ -30,17 +30,17 @@ const envPresets = {
         loginname: 'SHARETRIP',
         login_password: 'SHTrip#12345678',
         channel: 'WEB',
-        merchanRefNo: 'UAT',
+        merchanRefNo: '456327yhewghk',
         txnamount: '23',
-        servicetype: 'DARAZ',
-        serviceid: 'DARAZ',
+        servicetype: 'SHARETRIP',
+        serviceid: 'SHARETRIP',
         resendpoint: 'https://merchant-payment-tester.vercel.app/callback'
     },
     DEV: {
         loginname: 'NOV24',
         login_password: 'NOV24Merchant@1234',
         channel: 'WEB',
-        merchanRefNo: 'DEV',
+        merchanRefNo: '567q89389',
         txnamount: '23',
         servicetype: 'DARAZ',
         serviceid: 'DARAZ',
@@ -62,7 +62,7 @@ const getPaymentUrl = (env) => `${baseUrls[env] || baseUrls.DEV}${CONTEXT_PATH}/
 
 // ===== STATE =====
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-let selectedChannel = 'WEB'; // Default to WEB for seamless merchant payment and return
+let selectedChannel = 'MOBILE'; // Default to WEB for seamless merchant payment and return
 let userExplicitChannel = false;
 let selectedEnv = 'UAT';
 let tokens = [];
@@ -125,8 +125,12 @@ function buildDeeplink(env = selectedEnv, pgwtoken = '') {
 
     const qs = `pgwtoken=${encodeURIComponent(pgwtoken)}&transactionId=${encodeURIComponent(txnId)}&merchanRefNo=${encodeURIComponent(refNo)}&txnamount=${encodeURIComponent(amount)}&servicetype=${encodeURIComponent(sType)}&serviceid=${encodeURIComponent(sId)}&resendpoint=${encodeURIComponent(resUrl)}`;
 
-    // Both DEV and UAT use custom scheme citybank:// so Citytouch app runs in merchant checkout mode and triggers return to resendpoint
-    return `citybank://citybank.com/merchant-gateway/signin?${qs}`;
+    if (env === 'DEV') {
+        return `citybank://citybank.com/merchant-gateway/signin?${qs}`;
+    } else {
+        // UAT and default HTTPS App Link
+        return `https://k2prod.citybankplc.com/merchant-gateway/signin?${qs}`;
+    }   
 }
 
 function setChannel(channel, isUserAction = false) {
