@@ -34,7 +34,7 @@ const envPresets = {
         txnamount: '23',
         servicetype: 'DARAZ',
         serviceid: 'DARAZ',
-        resendpoint: 'https://k2prod.citybankplc.com/pgwtester/callback'
+        resendpoint: 'https://citybank.f1soft.com.np/pgwtester/callback'
     },
     DEV: {
         loginname: 'NOV24',
@@ -76,19 +76,22 @@ const servicetypeInput = document.getElementById('servicetype');
 const serviceidInput = document.getElementById('serviceid');
 
 function getMerchantCallbackUrl(env = selectedEnv) {
-    if (env === 'UAT') {
-        return 'https://k2prod.citybankplc.com/pgwtester/callback';
-    }
-    if (env === 'DEV') {
-        return 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
-    }
     const origin = window.location.origin;
     const pathname = window.location.pathname;
     const basePath = pathname.includes('/pgwtester') ? '/pgwtester' : '';
-    if (origin && origin !== 'null' && !origin.startsWith('file:') && !origin.includes('k2.citybankplc.com') && !origin.includes('k2prod.citybankplc.com')) {
+
+    if (env === 'DEV') {
+        if (origin && origin !== 'null' && !origin.startsWith('file:') && !origin.includes('citybankplc.com')) {
+            return `${origin}${basePath}/callback`;
+        }
+        return 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
+    }
+
+    // For UAT: CityBank gateway requires HTTPS callback to our merchant tester
+    if (origin && origin !== 'null' && !origin.startsWith('file:') && origin.startsWith('https://') && !origin.includes('citybankplc.com')) {
         return `${origin}${basePath}/callback`;
     }
-    return 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
+    return 'https://citybank.f1soft.com.np/pgwtester/callback';
 }
 
 function buildDeeplink(env = selectedEnv, pgwtoken = '') {
@@ -97,9 +100,14 @@ function buildDeeplink(env = selectedEnv, pgwtoken = '') {
     const amount = (txnamountInput && txnamountInput.value.trim()) ? txnamountInput.value.trim() : '23';
     const sType = (servicetypeInput && servicetypeInput.value.trim()) ? servicetypeInput.value.trim() : 'DARAZ';
     const sId = (serviceidInput && serviceidInput.value.trim()) ? serviceidInput.value.trim() : 'DARAZ';
-    const resUrl = (resendpointInput && resendpointInput.value.trim())
+    let resUrl = (resendpointInput && resendpointInput.value.trim())
         ? resendpointInput.value.trim()
         : getMerchantCallbackUrl(env);
+
+    // Ensure we do not use CityBank's gateway domain as the callback endpoint
+    if (resUrl.includes('k2prod.citybankplc.com') || resUrl.includes('k2.citybankplc.com') || !resUrl.includes('callback')) {
+        resUrl = getMerchantCallbackUrl(env);
+    }
 
     const qs = `pgwtoken=${encodeURIComponent(pgwtoken)}&transactionId=${encodeURIComponent(txnId)}&merchanRefNo=${encodeURIComponent(refNo)}&txnamount=${encodeURIComponent(amount)}&servicetype=${encodeURIComponent(sType)}&serviceid=${encodeURIComponent(sId)}&resendpoint=${encodeURIComponent(resUrl)}`;
 
@@ -330,12 +338,12 @@ paymentForm.addEventListener('submit', async (e) => {
     let resVal = (resendpointInput.value || '').trim();
 
     if (selectedEnv === 'UAT') {
-        if (!resVal || !resVal.includes('callback')) {
-            resendpointInput.value = 'https://k2prod.citybankplc.com/pgwtester/callback';
+        if (!resVal || !resVal.includes('callback') || resVal.includes('citybankplc.com')) {
+            resendpointInput.value = getMerchantCallbackUrl('UAT');
         }
     } else if (selectedEnv === 'DEV') {
-        if (!resVal || !resVal.includes('callback')) {
-            resendpointInput.value = 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
+        if (!resVal || !resVal.includes('callback') || resVal.includes('citybankplc.com')) {
+            resendpointInput.value = getMerchantCallbackUrl('DEV');
         }
     }
 

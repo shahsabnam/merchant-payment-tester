@@ -107,10 +107,13 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
   }
 
   const defaultResEndpoint = env === 'UAT'
-    ? 'https://k2prod.citybankplc.com/pgwtester/callback'
+    ? 'https://citybank.f1soft.com.np/pgwtester/callback'
     : 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
 
-  const finalResEndpoint = resendpoint || defaultResEndpoint;
+  let finalResEndpoint = resendpoint || defaultResEndpoint;
+  if (finalResEndpoint.includes('k2prod.citybankplc.com') || finalResEndpoint.includes('k2.citybankplc.com') || !finalResEndpoint.includes('callback')) {
+    finalResEndpoint = defaultResEndpoint;
+  }
   const finalMerchantRefNo = merchanRefNo || (env === 'UAT' ? 'UAT' : 'DEV');
   const finalServiceType = servicetype || 'DARAZ';
   const finalServiceId = serviceid || 'DARAZ';
@@ -230,7 +233,7 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
 //   transactionId=NOV24-39220b63-5409-445d-8b51-016693cfb635
 //   txnamount=23
 // POST callback from CityBank gateway (supports both /callback for DEV and /pgwtester/callback for UAT)
-app.post(['/callback', '/pgwtester/callback'], express.urlencoded({ extended: true }), (req, res) => {
+app.post(['/callback', '/pgwtester/callback'], express.urlencoded({ extended: true }), express.json(), (req, res) => {
   const payload = req.body;                  // parsed form data from Citytouch
   const receivedAt = new Date().toISOString();
 
