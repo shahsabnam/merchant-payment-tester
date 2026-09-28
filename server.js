@@ -142,18 +142,31 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
 
     console.log(`[${env}] userlogin proxy called. Location: ${location.slice(0, 100)}, pgwtoken extracted: ${pgwtoken ? 'YES' : 'NO'}`);
 
+    const queryParams = new URLSearchParams({
+      pgwtoken: pgwtoken,
+      transactionId: transactionId,
+      merchanRefNo: merchanRefNo || env,
+      txnamount: String(txnamount || '10'),
+      servicetype: servicetype || 'PAYMENT',
+      serviceid: serviceid || '67',
+      resendpoint: resendpoint || 'https://k2.citybankplc.com/pgwtester/callback'
+    }).toString();
+
     return res.json({
       status: 'success',
       pgwtoken,
       webUrl: location,
       appLinks: {
-        scheme: `citybank://citybank.com?pgwtoken=${encodedToken}`,
-        schemePath: `citybank://citybank.com/merchant-gateway/signin?pgwtoken=${encodedToken}`,
-        androidIntentScheme: `intent://citybank.com?pgwtoken=${encodedToken}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`,
-        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?pgwtoken=${encodedToken}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
-        k2prod: `https://k2prod.citybankplc.com/merchant-gateway/signin?pgwtoken=${encodedToken}`,
-        citytouch: `https://citytouch.com.bd/merchant-gateway/signin?pgwtoken=${encodedToken}`,
-        cityRedirect: `https://city.redirect.com?pgwtoken=${encodedToken}`
+        schemePath: `citybank://citybank.com/merchant-gateway/signin?${queryParams}`,
+        schemeLink: `citybank://citybank.com/citytouch/link?${queryParams}`,
+        schemeBase: `citybank://citybank.com?${queryParams}`,
+        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
+        androidIntentK2Link: `intent://k2prod.citybankplc.com/citytouch/link?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
+        androidIntentScheme: `intent://citybank.com/merchant-gateway/signin?${queryParams}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`,
+        k2prod: `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`,
+        k2prodLink: `https://k2prod.citybankplc.com/citytouch/link?${queryParams}`,
+        citytouch: `https://citytouch.com.bd/merchant-gateway/signin?${queryParams}`,
+        cityRedirect: `https://city.redirect.com?${queryParams}`
       }
     });
   } catch (error) {

@@ -314,8 +314,8 @@ paymentForm.addEventListener('submit', async (e) => {
         }
     }
 
-    // If channel is MOBILE, handle deep link app launching
-    if (selectedChannel === 'MOBILE') {
+    // On mobile or when channel is MOBILE, handle Citytouch app payment launching
+    if (isMobileDevice || selectedChannel === 'MOBILE') {
         e.preventDefault();
 
         const paymentBtn = document.getElementById('paymentBtn');
@@ -343,24 +343,36 @@ paymentForm.addEventListener('submit', async (e) => {
             const data = await res.json();
 
             if (data.status === 'success' && data.appLinks) {
-                // Populate deep link modal buttons
-                document.getElementById('btnScheme').href = data.appLinks.scheme;
-                document.getElementById('btnIntent').href = data.appLinks.androidIntentK2;
-                document.getElementById('btnK2Prod').href = data.appLinks.k2prod;
-                document.getElementById('btnCitytouch').href = data.appLinks.citytouch;
-                document.getElementById('btnWebPortal').href = data.webUrl || '#';
+                // Populate deep link modal buttons with exact payment routes
+                const btnK2 = document.getElementById('btnK2ProdIntent');
+                if (btnK2) btnK2.href = data.appLinks.androidIntentK2;
+
+                const btnScheme = document.getElementById('btnSchemePath');
+                if (btnScheme) btnScheme.href = data.appLinks.schemePath;
+
+                const btnLink = document.getElementById('btnSchemeLink');
+                if (btnLink) btnLink.href = data.appLinks.schemeLink;
+
+                const btnK2Url = document.getElementById('btnK2ProdUrl');
+                if (btnK2Url) btnK2Url.href = data.appLinks.k2prod;
+
+                const btnProd = document.getElementById('btnProdIntent');
+                if (btnProd) btnProd.href = data.appLinks.citytouch;
+
+                const btnWeb = document.getElementById('btnWebPortal');
+                if (btnWeb) btnWeb.href = data.webUrl || '#';
 
                 // Display modal
-                document.getElementById('deepLinkModal').style.display = 'flex';
-                showToast('🚀 Launching Citytouch App...', 'info');
+                const modal = document.getElementById('deepLinkModal');
+                if (modal) modal.style.display = 'flex';
+                showToast('🚀 Opening Citytouch Payment Screen...', 'info');
 
-                // Attempt auto-launch via custom scheme
+                // Attempt auto-launch into Payment Flow (Android Intent with /signin path)
                 setTimeout(() => {
-                    window.location.href = data.appLinks.scheme;
+                    window.location.href = data.appLinks.androidIntentK2 || data.appLinks.schemePath;
                 }, 300);
             } else {
                 showToast('Gateway error: ' + (data.message || 'Unknown error'), 'error');
-                // Fallback to standard form submit
                 paymentForm.submit();
             }
         } catch (err) {

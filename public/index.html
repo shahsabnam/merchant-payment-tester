@@ -192,6 +192,42 @@
     </div>
   </main>
 
+  <!-- Deep Link Modal -->
+  <div id="deepLinkModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📱 Open Citytouch Payment Flow</h3>
+        <button type="button" class="modal-close" onclick="closeDeepLinkModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.5;">
+          Select a method below to trigger your installed <strong>Citytouch App</strong> directly into the <strong>Payment screen</strong>:
+        </p>
+        
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a id="btnK2ProdIntent" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;background:#2563eb;">
+            ⚡ Android Intent (k2prod /signin)
+          </a>
+          <a id="btnSchemePath" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;">
+            🚀 Custom Scheme (citybank://.../signin)
+          </a>
+          <a id="btnSchemeLink" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;background:#4338ca;">
+            🔗 Citytouch Link (/citytouch/link)
+          </a>
+          <a id="btnK2ProdUrl" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;background:#0d9488;">
+            🏦 k2prod App Link (HTTPS)
+          </a>
+          <a id="btnProdIntent" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;background:#059669;">
+            📱 Production Intent (citytouch.com.bd)
+          </a>
+          <a id="btnWebPortal" href="#" class="btn" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:#334155;color:#fff;padding:12px;font-size:13px;font-weight:600;">
+            🌐 Open in Web Portal (Browser)
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
   <script>
     // Register Service Worker for PWA
