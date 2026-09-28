@@ -180,11 +180,9 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
       resendpoint: finalResEndpoint
     }).toString();
 
-    // Use custom scheme citybank:// for both DEV and UAT so Citytouch app runs in merchant checkout mode and triggers return to resendpoint
     const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatHttpsLink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
-    const targetDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
+    const uatDeeplink = `https://k2.citybankplc.com/merchant-gateway/signin?${queryParams}`;
+    const targetDeeplink = env === 'DEV' ? devDeeplink : uatDeeplink;
 
     return res.json({
       status: 'success',
@@ -195,15 +193,12 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
         targetDeeplink,
         devDeeplink,
         uatDeeplink,
-        uatHttpsLink,
         schemePath: devDeeplink,
-        k2prod: uatHttpsLink,
-        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
+        k2: uatDeeplink,
+        androidIntentK2: `intent://k2.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
         androidIntentScheme: `intent://citybank.com/merchant-gateway/signin?${queryParams}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`,
         schemeLink: `citybank://citybank.com/citytouch/link?${queryParams}`,
-        k2prodLink: `https://k2prod.citybankplc.com/citytouch/link?${queryParams}`,
-        citytouch: `https://citytouch.com.bd/merchant-gateway/signin?${queryParams}`,
-        cityRedirect: `https://city.redirect.com?${queryParams}`
+        citytouch: `https://citytouch.com.bd/merchant-gateway/signin?${queryParams}`
       }
     });
   } catch (error) {
@@ -219,9 +214,8 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
     }).toString();
 
     const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatHttpsLink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
-    const targetDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
+    const uatDeeplink = `https://k2.citybankplc.com/merchant-gateway/signin?${queryParams}`;
+    const targetDeeplink = env === 'DEV' ? devDeeplink : uatDeeplink;
 
     return res.json({
       status: 'warning',
@@ -231,10 +225,9 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
         targetDeeplink,
         devDeeplink,
         uatDeeplink,
-        uatHttpsLink,
         schemePath: devDeeplink,
-        k2prod: uatHttpsLink,
-        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
+        k2: uatDeeplink,
+        androidIntentK2: `intent://k2.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
         androidIntentScheme: `intent://citybank.com/merchant-gateway/signin?${queryParams}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`
       }
     });

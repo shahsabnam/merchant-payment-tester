@@ -129,7 +129,7 @@ function buildDeeplink(env = selectedEnv, pgwtoken = '') {
         return `citybank://citybank.com/merchant-gateway/signin?${qs}`;
     } else {
         // UAT and default HTTPS App Link
-        return `https://k2prod.citybankplc.com/merchant-gateway/signin?${qs}`;
+        return `https://k2.citybankplc.com/merchant-gateway/signin?${qs}`;
     }   
 }
 
