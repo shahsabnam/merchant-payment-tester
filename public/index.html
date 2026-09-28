@@ -7,8 +7,14 @@
   <title>Merchant Payment Tester — CityBank Gateway</title>
   <meta name="description" content="Internal testing tool for CityBank merchant payment gateway integration">
   <link rel="stylesheet" href="style.css">
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏦</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PGW Tester">
+  <link rel="apple-touch-icon" href="icon.svg">
 </head>
 
 <body>
@@ -29,9 +35,14 @@
       <div class="logo-icon">🏦</div>
       <div class="logo-text"><span>CityBank</span> Payment Tester</div>
     </div>
-    <div class="header-badge">
-      <div class="dot"></div>
-      Testing Environment
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="installAppBtn" type="button" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,0.4);transition:transform 0.2s;">
+        📲 Install App
+      </button>
+      <div class="header-badge">
+        <div class="dot"></div>
+        Testing Environment
+      </div>
     </div>
   </header>
 
@@ -182,6 +193,38 @@
   </main>
 
   <script src="app.js"></script>
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW reg error:', err));
+      });
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installBtn = document.getElementById('installAppBtn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installBtn) installBtn.style.display = 'inline-flex';
+    });
+    if (installBtn) {
+      installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            installBtn.style.display = 'none';
+          }
+          deferredPrompt = null;
+        }
+      });
+    }
+    window.addEventListener('appinstalled', () => {
+      if (installBtn) installBtn.style.display = 'none';
+    });
+  </script>
 </body>
 
 </html>

@@ -1,0 +1,19 @@
+{
+  "name": "CityBank Merchant Payment Tester",
+  "short_name": "PGW Tester",
+  "description": "Test CityBank Payment Gateway & Citytouch Mobile App integration",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
