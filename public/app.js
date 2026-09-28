@@ -29,7 +29,7 @@ const envPresets = {
     UAT: {
         loginname: 'SHARETRIP',
         login_password: 'SHTrip#12345678',
-        channel: 'WEB',
+        channel: 'MOBILE',
         merchanRefNo: '456327yhewghk',
         txnamount: '23',
         servicetype: 'SHARETRIP',
@@ -39,7 +39,7 @@ const envPresets = {
     DEV: {
         loginname: 'NOV24',
         login_password: 'NOV24Merchant@1234',
-        channel: 'WEB',
+        channel: 'MOBILE',
         merchanRefNo: '567q89389',
         txnamount: '23',
         servicetype: 'DARAZ',
@@ -47,8 +47,8 @@ const envPresets = {
         resendpoint: 'http://pgw-client-tester.10.13.134.14.nip.io/callback'
     },
     LOCAL: {
-        loginname: 'daraz',
-        login_password: 'Abc@1234',
+        loginname: 'NOV24',
+        login_password: 'NOV24Merchant@1234',
         channel: 'WEB',
         merchanRefNo: 'LOCAL',
         txnamount: '23',
@@ -371,46 +371,39 @@ paymentForm.addEventListener('submit', async (e) => {
         paymentBtn.innerHTML = '<div class="spinner"></div> Opening Citytouch App...';
 
         try {
-            if (selectedEnv === 'DEV') {
-                // For DEV: build and launch custom scheme directly
-                const devDeeplink = buildDeeplink('DEV', '');
-                showToast('🚀 Opening DEV Citytouch app...', 'info');
-                window.location.href = devDeeplink;
-            } else {
-                // For UAT: request userlogin to fetch pgwtoken and redirect to HTTPS App Link
-                showToast('🚀 Connecting to Citytouch (UAT)...', 'info');
+            showToast(`🚀 Connecting to Citytouch (${selectedEnv})...`, 'info');
 
-                const payload = {
-                    transactionId: transactionIdInput.value.trim(),
-                    merchanRefNo: (merchanRefNoInput?.value || 'UAT').trim(),
-                    txnamount: (txnamountInput?.value || '23').trim(),
-                    servicetype: (servicetypeInput?.value || 'DARAZ').trim(),
-                    serviceid: (serviceidInput?.value || 'DARAZ').trim(),
-                    resendpoint: resendpointInput.value.trim(),
-                    env: selectedEnv
-                };
+            const payload = {
+                transactionId: transactionIdInput.value.trim(),
+                merchanRefNo: (merchanRefNoInput?.value || selectedEnv).trim(),
+                txnamount: (txnamountInput?.value || '23').trim(),
+                servicetype: (servicetypeInput?.value || 'DARAZ').trim(),
+                serviceid: (serviceidInput?.value || 'DARAZ').trim(),
+                resendpoint: resendpointInput.value.trim(),
+                env: selectedEnv
+            };
 
-                let targetDeeplink = buildDeeplink('UAT', '');
+            let targetDeeplink = buildDeeplink(selectedEnv, '');
 
-                try {
-                    const res = await fetch(getUserloginUrl(), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+            try {
+                const res = await fetch(getUserloginUrl(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-                    const data = await res.json();
-                    if (data.targetDeeplink) {
-                        targetDeeplink = data.targetDeeplink;
-                    } else if (data.pgwtoken) {
-                        targetDeeplink = buildDeeplink('UAT', data.pgwtoken);
-                    }
-                } catch (proxyErr) {
-                    console.warn('UAT proxy call warning, launching static template:', proxyErr);
+                const data = await res.json();
+                if (data.targetDeeplink) {
+                    targetDeeplink = data.targetDeeplink;
+                } else if (data.pgwtoken) {
+                    targetDeeplink = buildDeeplink(selectedEnv, data.pgwtoken);
                 }
-
-                window.location.href = targetDeeplink;
+            } catch (proxyErr) {
+                console.warn(`${selectedEnv} proxy call warning, launching deeplink:`, proxyErr);
             }
+
+            console.log(`[MOBILE] Navigating to:`, targetDeeplink);
+            window.location.href = targetDeeplink;
         } catch (err) {
             console.error('Payment launch error:', err);
             const fallbackLink = buildDeeplink(selectedEnv, '');
