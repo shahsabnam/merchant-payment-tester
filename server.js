@@ -107,7 +107,7 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
   }
 
   const defaultResEndpoint = env === 'UAT'
-    ? 'https://citybank.f1soft.com.np/pgwtester/callback'
+    ? 'https://merchant-payment-tester.vercel.app/callback'
     : 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
 
   let finalResEndpoint = resendpoint || defaultResEndpoint;

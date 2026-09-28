@@ -34,7 +34,7 @@ const envPresets = {
         txnamount: '23',
         servicetype: 'DARAZ',
         serviceid: 'DARAZ',
-        resendpoint: 'https://citybank.f1soft.com.np/pgwtester/callback'
+        resendpoint: 'https://merchant-payment-tester.vercel.app/callback'
     },
     DEV: {
         loginname: 'NOV24',
@@ -81,17 +81,17 @@ function getMerchantCallbackUrl(env = selectedEnv) {
     const basePath = pathname.includes('/pgwtester') ? '/pgwtester' : '';
 
     if (env === 'DEV') {
-        if (origin && origin !== 'null' && !origin.startsWith('file:') && !origin.includes('citybankplc.com')) {
+        if (origin && origin !== 'null' && !origin.startsWith('file:') && !origin.includes('citybankplc.com') && !origin.includes('vercel.app')) {
             return `${origin}${basePath}/callback`;
         }
         return 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
     }
 
-    // For UAT: CityBank gateway requires HTTPS callback to our merchant tester
-    if (origin && origin !== 'null' && !origin.startsWith('file:') && origin.startsWith('https://') && !origin.includes('citybankplc.com')) {
-        return `${origin}${basePath}/callback`;
+    // For UAT: use current vercel origin or default to https://merchant-payment-tester.vercel.app/callback
+    if (origin && origin.includes('merchant-payment-tester.vercel.app')) {
+        return `${origin}/callback`;
     }
-    return 'https://citybank.f1soft.com.np/pgwtester/callback';
+    return 'https://merchant-payment-tester.vercel.app/callback';
 }
 
 function buildDeeplink(env = selectedEnv, pgwtoken = '') {
