@@ -53,7 +53,7 @@ const getPaymentUrl = (env) => `${baseUrls[env] || baseUrls.DEV}${CONTEXT_PATH}/
 
 // ===== STATE =====
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-let selectedChannel = isMobileDevice ? 'MOBILE' : 'WEB';
+let selectedChannel = 'WEB'; // Default to WEB for seamless merchant payment and return
 let userExplicitChannel = false;
 let selectedEnv = 'UAT';
 let tokens = [];
@@ -94,9 +94,9 @@ function applyPreset(env) {
         if (loginPasswordInput && preset.login_password) loginPasswordInput.value = preset.login_password;
         if (merchanRefNoInput && preset.merchanRefNo) merchanRefNoInput.value = preset.merchanRefNo;
         
-        // Auto-select MOBILE on mobile devices unless user explicitly switched to WEB
+        // Default to WEB for seamless merchant payment and callback return
         if (!userExplicitChannel) {
-            setChannel(isMobileDevice ? 'MOBILE' : (preset.channel || 'WEB'));
+            setChannel('WEB');
         }
 
         if (resendpointInput) {
