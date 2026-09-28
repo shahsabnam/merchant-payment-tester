@@ -111,22 +111,6 @@ function buildDeeplink(env = selectedEnv, pgwtoken = '') {
     }
 }
 
-function updateDeeplinkPreview(customLink = null) {
-    const link = customLink || buildDeeplink(selectedEnv);
-    const deeplinkText = document.getElementById('deeplinkText');
-    const btnDirectDeeplink = document.getElementById('btnDirectDeeplink');
-    const deeplinkEnvBadge = document.getElementById('deeplinkEnvBadge');
-
-    if (deeplinkText) deeplinkText.textContent = link;
-    if (btnDirectDeeplink) btnDirectDeeplink.href = link;
-    if (deeplinkEnvBadge) deeplinkEnvBadge.textContent = selectedEnv;
-
-    const modalPrimary = document.getElementById('btnPrimaryDeeplink');
-    const modalPrimaryLabel = document.getElementById('modalPrimaryEnvLabel');
-    if (modalPrimary) modalPrimary.href = link;
-    if (modalPrimaryLabel) modalPrimaryLabel.textContent = `${selectedEnv} Default`;
-}
-
 function setChannel(channel, isUserAction = false) {
     selectedChannel = channel;
     if (isUserAction) {
@@ -155,7 +139,6 @@ function applyPreset(env) {
             resendpointInput.value = preset.resendpoint || getMerchantCallbackUrl(env);
         }
     }
-    updateDeeplinkPreview();
 }
 
 if (resendpointInput) {
@@ -250,7 +233,6 @@ tokenForm.addEventListener('submit', async (e) => {
 
             // Fill payment form
             transactionIdInput.value = data.transactionId;
-            updateDeeplinkPreview();
 
             // Enable payment panel
             paymentPanel.classList.remove('disabled');
@@ -315,7 +297,6 @@ function useToken(index) {
     const token = tokens[index];
     if (token) {
         transactionIdInput.value = token.id;
-        updateDeeplinkPreview();
         paymentPanel.classList.remove('disabled');
         step1Indicator.classList.remove('active');
         step1Indicator.classList.add('completed');
@@ -323,30 +304,6 @@ function useToken(index) {
         stepConnector.classList.add('active');
         showToast('Token loaded into payment form', 'info');
     }
-}
-
-// ===== REAL-TIME INPUT LISTENERS FOR DEEPLINK =====
-['txnamount', 'servicetype', 'serviceid', 'merchanRefNo', 'resendpoint', 'transactionId'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-        el.addEventListener('input', () => updateDeeplinkPreview());
-    }
-});
-
-const btnCopyDeeplink = document.getElementById('btnCopyDeeplink');
-if (btnCopyDeeplink) {
-    btnCopyDeeplink.addEventListener('click', () => {
-        const link = document.getElementById('deeplinkText')?.textContent || '';
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(link).then(() => {
-                showToast('📋 Copied deep link to clipboard!', 'success');
-            }).catch(() => {
-                prompt('Copy this deep link:', link);
-            });
-        } else {
-            prompt('Copy this deep link:', link);
-        }
-    });
 }
 
 // ===== STEP NAVIGATION =====
@@ -362,19 +319,13 @@ step2Indicator.addEventListener('click', () => {
     }
 });
 
-// ===== DEEP LINK MODAL =====
-function closeDeepLinkModal() {
-    const modal = document.getElementById('deepLinkModal');
-    if (modal) modal.style.display = 'none';
-}
-
 function getUserloginUrl() {
     return window.location.pathname.includes('/pgwtester')
         ? '/pgwtester/api/userlogin'
         : '/api/userlogin';
 }
 
-// ===== PAYMENT FORM SUBMISSION GUARD & APP LAUNCHER =====
+// ===== PAYMENT FORM SUBMISSION & INTERNAL APP REDIRECTION =====
 paymentForm.addEventListener('submit', async (e) => {
     let resVal = (resendpointInput.value || '').trim();
 
@@ -388,94 +339,65 @@ paymentForm.addEventListener('submit', async (e) => {
         }
     }
 
-    // On mobile or when channel is MOBILE, handle Citytouch app payment launching
+    // On mobile devices or when channel is MOBILE, launch Citytouch app internally
     if (isMobileDevice || selectedChannel === 'MOBILE') {
         e.preventDefault();
 
         const paymentBtn = document.getElementById('paymentBtn');
         const originalBtnText = paymentBtn.innerHTML;
         paymentBtn.disabled = true;
-        paymentBtn.innerHTML = '<div class="spinner"></div> Opening Citytouch...';
-
-        const staticDeeplink = buildDeeplink(selectedEnv);
-        updateDeeplinkPreview(staticDeeplink);
-
-        let finalDeeplink = staticDeeplink;
+        paymentBtn.innerHTML = '<div class="spinner"></div> Opening Citytouch App...';
 
         try {
-            const payload = {
-                transactionId: transactionIdInput.value.trim(),
-                merchanRefNo: merchanRefNoInput.value.trim(),
-                txnamount: (document.getElementById('txnamount')?.value || '23').trim(),
-                servicetype: (document.getElementById('servicetype')?.value || 'DARAZ').trim(),
-                serviceid: (document.getElementById('serviceid')?.value || 'DARAZ').trim(),
-                resendpoint: resendpointInput.value.trim(),
-                env: selectedEnv
-            };
+            if (selectedEnv === 'DEV') {
+                // For DEV: build and launch custom scheme directly
+                const devDeeplink = buildDeeplink('DEV', '');
+                showToast('🚀 Opening DEV Citytouch app...', 'info');
+                window.location.href = devDeeplink;
+            } else {
+                // For UAT: request userlogin to fetch pgwtoken and redirect to HTTPS App Link
+                showToast('🚀 Connecting to Citytouch (UAT)...', 'info');
 
-            // Call proxy to obtain pgwtoken and server-built deeplinks
-            try {
-                const res = await fetch(getUserloginUrl(), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                const payload = {
+                    transactionId: transactionIdInput.value.trim(),
+                    merchanRefNo: (merchanRefNoInput?.value || 'UAT').trim(),
+                    txnamount: (txnamountInput?.value || '23').trim(),
+                    servicetype: (servicetypeInput?.value || 'DARAZ').trim(),
+                    serviceid: (serviceidInput?.value || 'DARAZ').trim(),
+                    resendpoint: resendpointInput.value.trim(),
+                    env: selectedEnv
+                };
 
-                const data = await res.json();
+                let targetDeeplink = buildDeeplink('UAT', '');
 
-                if (data.status === 'success' || data.status === 'warning') {
+                try {
+                    const res = await fetch(getUserloginUrl(), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
                     if (data.targetDeeplink) {
-                        finalDeeplink = data.targetDeeplink;
+                        targetDeeplink = data.targetDeeplink;
                     } else if (data.pgwtoken) {
-                        finalDeeplink = buildDeeplink(selectedEnv, data.pgwtoken);
+                        targetDeeplink = buildDeeplink('UAT', data.pgwtoken);
                     }
-
-                    if (data.appLinks) {
-                        const btnPrimary = document.getElementById('btnPrimaryDeeplink');
-                        if (btnPrimary) btnPrimary.href = finalDeeplink;
-
-                        const btnK2 = document.getElementById('btnK2ProdIntent');
-                        if (btnK2) btnK2.href = data.appLinks.androidIntentK2;
-
-                        const btnScheme = document.getElementById('btnSchemePath');
-                        if (btnScheme) btnScheme.href = data.appLinks.schemePath || data.appLinks.devDeeplink;
-
-                        const btnLink = document.getElementById('btnSchemeLink');
-                        if (btnLink) btnLink.href = data.appLinks.schemeLink;
-
-                        const btnK2Url = document.getElementById('btnK2ProdUrl');
-                        if (btnK2Url) btnK2Url.href = data.appLinks.k2prod || data.appLinks.uatDeeplink;
-
-                        const btnProd = document.getElementById('btnProdIntent');
-                        if (btnProd) btnProd.href = data.appLinks.citytouch;
-
-                        const btnWeb = document.getElementById('btnWebPortal');
-                        if (btnWeb) btnWeb.href = data.webUrl || '#';
-                    }
+                } catch (proxyErr) {
+                    console.warn('UAT proxy call warning, launching static template:', proxyErr);
                 }
-            } catch (proxyErr) {
-                console.warn('Proxy call warning, proceeding with static link:', proxyErr);
+
+                window.location.href = targetDeeplink;
             }
-
-            updateDeeplinkPreview(finalDeeplink);
-
-            // Display modal with all link options
-            const modal = document.getElementById('deepLinkModal');
-            if (modal) modal.style.display = 'flex';
-            showToast(`🚀 Opening Citytouch (${selectedEnv})...`, 'info');
-
-            // Trigger app navigation directly
-            setTimeout(() => {
-                window.location.href = finalDeeplink;
-            }, 250);
-
         } catch (err) {
             console.error('Payment launch error:', err);
-            showToast('Opening default deep link...', 'info');
-            window.location.href = staticDeeplink;
+            const fallbackLink = buildDeeplink(selectedEnv, '');
+            window.location.href = fallbackLink;
         } finally {
-            paymentBtn.disabled = false;
-            paymentBtn.innerHTML = originalBtnText;
+            setTimeout(() => {
+                paymentBtn.disabled = false;
+                paymentBtn.innerHTML = originalBtnText;
+            }, 1000);
         }
     }
 });
