@@ -210,10 +210,7 @@ app.get(['/callback', '/pgwtester/callback'], (req, res) => {
 });
 
 // GET /pgwtester or /pgwtester/ — serves main page when accessed under /pgwtester context path
-app.get('/pgwtester', (req, res) => {
-  res.redirect(301, '/pgwtester/');
-});
-app.get('/pgwtester/', (req, res) => {
+app.get(['/pgwtester', '/pgwtester/'], (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
