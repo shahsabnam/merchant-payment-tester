@@ -106,16 +106,26 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
     return res.status(400).json({ status: 'error', message: 'transactionId is required' });
   }
 
+  const defaultResEndpoint = env === 'UAT'
+    ? 'https://k2prod.citybankplc.com/pgwtester/callback'
+    : 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
+
+  const finalResEndpoint = resendpoint || defaultResEndpoint;
+  const finalMerchantRefNo = merchanRefNo || (env === 'UAT' ? 'UAT' : 'DEV');
+  const finalServiceType = servicetype || 'DARAZ';
+  const finalServiceId = serviceid || 'DARAZ';
+  const finalTxnAmount = String(txnamount || '23');
+
   const baseUrl = environments[env] || environments.DEV;
   const loginUrl = `${baseUrl}${CONTEXT_PATH}/userlogin`;
 
   const params = new URLSearchParams({
     transactionId,
-    merchanRefNo: merchanRefNo || env,
-    txnamount: String(txnamount || '10'),
-    servicetype: servicetype || 'PAYMENT',
-    serviceid: serviceid || '67',
-    resendpoint: resendpoint || 'https://k2.citybankplc.com/pgwtester/callback'
+    merchanRefNo: finalMerchantRefNo,
+    txnamount: finalTxnAmount,
+    servicetype: finalServiceType,
+    serviceid: finalServiceId,
+    resendpoint: finalResEndpoint
   });
 
   const headers = {
@@ -138,32 +148,37 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
     const location = response.headers.get('location') || '';
     const match = location.match(/[?&]pgwtoken=([^&]+)/);
     const pgwtoken = match ? decodeURIComponent(match[1]) : '';
-    const encodedToken = match ? match[1] : '';
 
     console.log(`[${env}] userlogin proxy called. Location: ${location.slice(0, 100)}, pgwtoken extracted: ${pgwtoken ? 'YES' : 'NO'}`);
 
     const queryParams = new URLSearchParams({
-      pgwtoken: pgwtoken,
+      pgwtoken: pgwtoken || '',
       transactionId: transactionId,
-      merchanRefNo: merchanRefNo || env,
-      txnamount: String(txnamount || '10'),
-      servicetype: servicetype || 'PAYMENT',
-      serviceid: serviceid || '67',
-      resendpoint: resendpoint || 'https://k2.citybankplc.com/pgwtester/callback'
+      merchanRefNo: finalMerchantRefNo,
+      txnamount: finalTxnAmount,
+      servicetype: finalServiceType,
+      serviceid: finalServiceId,
+      resendpoint: finalResEndpoint
     }).toString();
+
+    const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
+    const uatDeeplink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
+    const targetDeeplink = env === 'DEV' ? devDeeplink : uatDeeplink;
 
     return res.json({
       status: 'success',
       pgwtoken,
       webUrl: location,
+      targetDeeplink,
       appLinks: {
-        schemePath: `citybank://citybank.com/merchant-gateway/signin?${queryParams}`,
-        schemeLink: `citybank://citybank.com/citytouch/link?${queryParams}`,
-        schemeBase: `citybank://citybank.com?${queryParams}`,
+        targetDeeplink,
+        devDeeplink,
+        uatDeeplink,
+        schemePath: devDeeplink,
+        k2prod: uatDeeplink,
         androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
-        androidIntentK2Link: `intent://k2prod.citybankplc.com/citytouch/link?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
         androidIntentScheme: `intent://citybank.com/merchant-gateway/signin?${queryParams}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`,
-        k2prod: `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`,
+        schemeLink: `citybank://citybank.com/citytouch/link?${queryParams}`,
         k2prodLink: `https://k2prod.citybankplc.com/citytouch/link?${queryParams}`,
         citytouch: `https://citytouch.com.bd/merchant-gateway/signin?${queryParams}`,
         cityRedirect: `https://city.redirect.com?${queryParams}`
@@ -171,9 +186,32 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
     });
   } catch (error) {
     console.error(`[${env}] userlogin proxy error:`, error.message);
-    return res.status(502).json({
-      status: 'error',
-      message: `Failed to connect to gateway: ${error.message}`
+    const queryParams = new URLSearchParams({
+      pgwtoken: '',
+      transactionId: transactionId,
+      merchanRefNo: finalMerchantRefNo,
+      txnamount: finalTxnAmount,
+      servicetype: finalServiceType,
+      serviceid: finalServiceId,
+      resendpoint: finalResEndpoint
+    }).toString();
+
+    const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
+    const uatDeeplink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
+    const targetDeeplink = env === 'DEV' ? devDeeplink : uatDeeplink;
+
+    return res.json({
+      status: 'warning',
+      message: `Gateway unreachable (${error.message}). Generated fallback deeplink.`,
+      targetDeeplink,
+      appLinks: {
+        targetDeeplink,
+        devDeeplink,
+        uatDeeplink,
+        schemePath: devDeeplink,
+        k2prod: uatDeeplink,
+        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`
+      }
     });
   }
 });

@@ -176,11 +176,30 @@
                 <input type="text" id="resendpoint" name="resendpoint" class="form-input"
                   placeholder="Auto-configured to current host /callback">
                 <small style="display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted);">
-                  📍 This must be <strong>your merchant tester callback URL</strong> (e.g. <code>http://pgw-client-tester.../callback</code>). Do not put CityBank's gateway URL here.
+                  📍 This must be <strong>your merchant tester callback URL</strong>.
                 </small>
               </div>
 
-              <button type="submit" class="btn btn-success" id="paymentBtn">
+              <!-- Static Deep Link Preview Box -->
+              <div class="deeplink-preview-box" id="deeplinkPreviewBox">
+                <div class="deeplink-preview-header">
+                  <span class="deeplink-preview-title">
+                    <span>📱</span> Citytouch App Link (<span id="deeplinkEnvBadge">DEV</span>)
+                  </span>
+                  <span class="deeplink-preview-badge" id="deeplinkTypeBadge">Static Default</span>
+                </div>
+                <div class="deeplink-code" id="deeplinkText">citybank://citybank.com/merchant-gateway/signin?pgwtoken=&transactionId=&merchanRefNo=DEV&txnamount=23&servicetype=DARAZ&serviceid=DARAZ&resendpoint=http%3A%2F%2Fpgw-client-tester.10.13.134.14.nip.io%2Fcallback</div>
+                <div class="deeplink-actions">
+                  <a id="btnDirectDeeplink" href="#" class="btn btn-primary" style="flex:1;text-align:center;text-decoration:none;padding:10px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    🚀 Open in Citytouch App
+                  </a>
+                  <button type="button" class="btn btn-outline" id="btnCopyDeeplink" style="padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:4px;">
+                    📋 Copy
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-success" id="paymentBtn" style="margin-top: 14px;">
                 📱 Continue to CityBank Payment
               </button>
 
@@ -205,22 +224,25 @@
         </p>
         
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <a id="btnK2ProdIntent" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;background:#2563eb;">
-            ⚡ Android Intent (k2prod /signin)
+          <a id="btnPrimaryDeeplink" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:13px;font-size:14px;font-weight:700;background:#16a34a;">
+            🚀 Open Citytouch (<span id="modalPrimaryEnvLabel">DEV Default</span>)
           </a>
-          <a id="btnSchemePath" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;">
-            🚀 Custom Scheme (citybank://.../signin)
+          <a id="btnSchemePath" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:11px;font-size:13px;font-weight:600;background:#2563eb;">
+            📱 DEV Scheme (citybank://.../signin)
           </a>
-          <a id="btnSchemeLink" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;background:#4338ca;">
+          <a id="btnK2ProdUrl" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:11px;font-size:13px;font-weight:600;background:#0d9488;">
+            🏦 UAT App Link (https://k2prod.../signin)
+          </a>
+          <a id="btnK2ProdIntent" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:11px;font-size:13px;font-weight:600;background:#4f46e5;">
+            ⚡ Android Intent (intent://k2prod.../signin)
+          </a>
+          <a id="btnSchemeLink" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:11px;font-size:13px;font-weight:600;background:#4338ca;">
             🔗 Citytouch Link (/citytouch/link)
           </a>
-          <a id="btnK2ProdUrl" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;background:#0d9488;">
-            🏦 k2prod App Link (HTTPS)
-          </a>
-          <a id="btnProdIntent" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:12px;font-size:13px;font-weight:600;background:#059669;">
+          <a id="btnProdIntent" href="#" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;padding:11px;font-size:13px;font-weight:600;background:#059669;">
             📱 Production Intent (citytouch.com.bd)
           </a>
-          <a id="btnWebPortal" href="#" class="btn" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:#334155;color:#fff;padding:12px;font-size:13px;font-weight:600;">
+          <a id="btnWebPortal" href="#" class="btn" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:#334155;color:#fff;padding:11px;font-size:13px;font-weight:600;">
             🌐 Open in Web Portal (Browser)
           </a>
         </div>
