@@ -121,10 +121,15 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
     ? 'https://merchant-payment-tester.vercel.app/callback'
     : 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
 
-  let finalResEndpoint = resendpoint || defaultResEndpoint;
-  if (finalResEndpoint.includes('k2prod.citybankplc.com') || finalResEndpoint.includes('k2.citybankplc.com') || !finalResEndpoint.includes('callback')) {
-    finalResEndpoint = defaultResEndpoint;
+  // resendpoint is optional. Only use default if resendpoint is undefined (not sent)
+  // If explicitly passed as empty string or null, respect user choice and DO NOT autofill!
+  let finalResEndpoint = (resendpoint !== undefined && resendpoint !== null) ? String(resendpoint).trim() : defaultResEndpoint;
+
+  // Protect against loops to CityBank's own domain
+  if (finalResEndpoint.includes('k2prod.citybankplc.com') || finalResEndpoint.includes('k2.citybankplc.com')) {
+    finalResEndpoint = '';
   }
+
   const finalMerchantRefNo = merchanRefNo || (env === 'UAT' ? 'UAT' : 'DEV');
   const finalServiceType = servicetype || 'DARAZ';
   const finalServiceId = serviceid || 'DARAZ';
@@ -175,9 +180,11 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
       resendpoint: finalResEndpoint
     }).toString();
 
+    // Use custom scheme citybank:// for both DEV and UAT so Citytouch app runs in merchant checkout mode and triggers return to resendpoint
     const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatDeeplink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
-    const targetDeeplink = env === 'DEV' ? devDeeplink : uatDeeplink;
+    const uatDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
+    const uatHttpsLink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
+    const targetDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
 
     return res.json({
       status: 'success',
@@ -188,8 +195,9 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
         targetDeeplink,
         devDeeplink,
         uatDeeplink,
+        uatHttpsLink,
         schemePath: devDeeplink,
-        k2prod: uatDeeplink,
+        k2prod: uatHttpsLink,
         androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
         androidIntentScheme: `intent://citybank.com/merchant-gateway/signin?${queryParams}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`,
         schemeLink: `citybank://citybank.com/citytouch/link?${queryParams}`,
@@ -211,8 +219,9 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
     }).toString();
 
     const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    const uatDeeplink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
-    const targetDeeplink = env === 'DEV' ? devDeeplink : uatDeeplink;
+    const uatDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
+    const uatHttpsLink = `https://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}`;
+    const targetDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
 
     return res.json({
       status: 'warning',
@@ -222,9 +231,11 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
         targetDeeplink,
         devDeeplink,
         uatDeeplink,
+        uatHttpsLink,
         schemePath: devDeeplink,
-        k2prod: uatDeeplink,
-        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`
+        k2prod: uatHttpsLink,
+        androidIntentK2: `intent://k2prod.citybankplc.com/merchant-gateway/signin?${queryParams}#Intent;scheme=https;package=com.thecitybank.citytouch;end`,
+        androidIntentScheme: `intent://citybank.com/merchant-gateway/signin?${queryParams}#Intent;scheme=citybank;package=com.thecitybank.citytouch;end`
       }
     });
   }

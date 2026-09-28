@@ -94,29 +94,39 @@ function getMerchantCallbackUrl(env = selectedEnv) {
     return 'https://merchant-payment-tester.vercel.app/callback';
 }
 
+let userExplicitlyClearedResendpoint = false;
+
+if (resendpointInput) {
+    resendpointInput.addEventListener('input', () => {
+        if (resendpointInput.value.trim() === '') {
+            userExplicitlyClearedResendpoint = true;
+        } else {
+            userExplicitlyClearedResendpoint = false;
+        }
+    });
+}
+
 function buildDeeplink(env = selectedEnv, pgwtoken = '') {
     const txnId = transactionIdInput ? transactionIdInput.value.trim() : '';
     const refNo = (merchanRefNoInput && merchanRefNoInput.value.trim()) ? merchanRefNoInput.value.trim() : (env === 'UAT' ? 'UAT' : 'DEV');
     const amount = (txnamountInput && txnamountInput.value.trim()) ? txnamountInput.value.trim() : '23';
     const sType = (servicetypeInput && servicetypeInput.value.trim()) ? servicetypeInput.value.trim() : 'DARAZ';
     const sId = (serviceidInput && serviceidInput.value.trim()) ? serviceidInput.value.trim() : 'DARAZ';
-    let resUrl = (resendpointInput && resendpointInput.value.trim())
-        ? resendpointInput.value.trim()
-        : getMerchantCallbackUrl(env);
 
-    // Ensure we do not use CityBank's gateway domain as the callback endpoint
-    if (resUrl.includes('k2prod.citybankplc.com') || resUrl.includes('k2.citybankplc.com') || !resUrl.includes('callback')) {
-        resUrl = getMerchantCallbackUrl(env);
+    // resendpoint is optional: if user left it empty, keep it empty!
+    let resUrl = (resendpointInput && resendpointInput.value !== undefined)
+        ? resendpointInput.value.trim()
+        : '';
+
+    // If user put CityBank gateway domain as callback, clear it
+    if (resUrl.includes('k2prod.citybankplc.com') || resUrl.includes('k2.citybankplc.com')) {
+        resUrl = '';
     }
 
     const qs = `pgwtoken=${encodeURIComponent(pgwtoken)}&transactionId=${encodeURIComponent(txnId)}&merchanRefNo=${encodeURIComponent(refNo)}&txnamount=${encodeURIComponent(amount)}&servicetype=${encodeURIComponent(sType)}&serviceid=${encodeURIComponent(sId)}&resendpoint=${encodeURIComponent(resUrl)}`;
 
-    if (env === 'DEV') {
-        return `citybank://citybank.com/merchant-gateway/signin?${qs}`;
-    } else {
-        // UAT and default HTTPS App Link
-        return `https://k2prod.citybankplc.com/merchant-gateway/signin?${qs}`;
-    }
+    // Both DEV and UAT use custom scheme citybank:// so Citytouch app runs in merchant checkout mode and triggers return to resendpoint
+    return `citybank://citybank.com/merchant-gateway/signin?${qs}`;
 }
 
 function setChannel(channel, isUserAction = false) {
@@ -143,7 +153,8 @@ function applyPreset(env) {
             setChannel('WEB');
         }
 
-        if (resendpointInput) {
+        // Only set preset resendpoint if user hasn't explicitly cleared it
+        if (resendpointInput && !userExplicitlyClearedResendpoint) {
             resendpointInput.value = preset.resendpoint || getMerchantCallbackUrl(env);
         }
     }
@@ -337,14 +348,10 @@ function getUserloginUrl() {
 paymentForm.addEventListener('submit', async (e) => {
     let resVal = (resendpointInput.value || '').trim();
 
-    if (selectedEnv === 'UAT') {
-        if (!resVal || !resVal.includes('callback') || resVal.includes('citybankplc.com')) {
-            resendpointInput.value = getMerchantCallbackUrl('UAT');
-        }
-    } else if (selectedEnv === 'DEV') {
-        if (!resVal || !resVal.includes('callback') || resVal.includes('citybankplc.com')) {
-            resendpointInput.value = getMerchantCallbackUrl('DEV');
-        }
+    // resendpoint is optional: only clear if user accidentally put CityBank's own domain
+    // NEVER autofill if empty! Respect user's explicit clearing.
+    if (resVal.includes('k2prod.citybankplc.com') || resVal.includes('k2.citybankplc.com')) {
+        resendpointInput.value = '';
     }
 
     // Always update paymentForm.action right before submit
