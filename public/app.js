@@ -20,8 +20,8 @@ const paymentForm = document.getElementById('paymentForm');
 const CONTEXT_PATH = '/CityBank/merchant';
 
 const baseUrls = {
-    DEV: 'https://k2prod.citybankplc.com/citytouch/',
-    UAT: 'https://k2prod.citybankplc.com/merchant-gateway',
+    DEV: 'http://edge-payment-gateway.10.13.134.14.nip.io',
+    UAT: 'https://k2.citybankplc.com/merchant-gateway',
     LOCAL: 'http://localhost:9083/merchant-gateway'
 };
 
@@ -87,9 +87,9 @@ function getMerchantCallbackUrl(env = selectedEnv) {
         return 'http://pgw-client-tester.10.13.134.14.nip.io/callback';
     }
 
-    // For UAT: use current vercel origin or default to https://merchant-payment-tester.vercel.app/callback
-    if (origin && origin.includes('merchant-payment-tester.vercel.app')) {
-        return `${origin}/callback`;
+    // For UAT: use current host callback or default to https://merchant-payment-tester.vercel.app/callback
+    if (origin && origin !== 'null' && !origin.startsWith('file:') && !origin.includes('citybankplc.com')) {
+        return `${origin}${basePath}/callback`;
     }
     return 'https://merchant-payment-tester.vercel.app/callback';
 }
@@ -347,8 +347,11 @@ paymentForm.addEventListener('submit', async (e) => {
         }
     }
 
-    // On mobile devices or when channel is MOBILE, launch Citytouch app internally
-    if (isMobileDevice || selectedChannel === 'MOBILE') {
+    // Always update paymentForm.action right before submit
+    paymentForm.action = getPaymentUrl(selectedEnv);
+
+    // When channel is MOBILE, launch Citytouch app internally via deeplink
+    if (selectedChannel === 'MOBILE') {
         e.preventDefault();
 
         const paymentBtn = document.getElementById('paymentBtn');

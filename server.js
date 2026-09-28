@@ -9,6 +9,17 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Enable CORS for all incoming requests (payment gateway redirects, cross-origin callbacks, preflight)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // When packaged with pkg, __dirname is a snapshot path.
 // Static assets (public/) must live next to the .exe,
 // so resolve them from the real executable directory.
