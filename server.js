@@ -235,6 +235,68 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
 });
 
 // =============================================================================
+// SESSION STORE — tracks the last known-good session per environment
+// Keyed by env name ('DEV', 'UAT', 'LOCAL'). Cleared on server restart.
+const sessionStore = {};
+
+// POST /api/checksession — verifies if a session is still valid
+// Body: { env, loginname, login_password }
+// Returns: { valid: true/false, message }
+app.post(['/api/checksession', '/pgwtester/api/checksession'], async (req, res) => {
+  const { env = 'DEV', loginname, login_password, channel = 'MOBILE' } = req.body;
+
+  if (!loginname || !login_password) {
+    return res.status(400).json({ valid: false, message: 'Credentials required to verify session' });
+  }
+
+  const baseUrl = environments[env] || environments.DEV;
+  const tokenUrl = `${baseUrl}${CONTEXT_PATH}/gettoken`;
+  const targetChannel = channel || 'MOBILE';
+
+  const headers = {
+    'x-request-channel': targetChannel,
+    'Content-Type': 'application/json'
+  };
+
+  // Forward the stored JSESSIONID for LOCAL env if available
+  if (env === 'LOCAL' && sessionStore[env]?.jsessionid) {
+    headers['Cookie'] = `JSESSIONID=${sessionStore[env].jsessionid}`;
+  } else if (env === 'LOCAL') {
+    headers['Cookie'] = 'JSESSIONID=81C02F40AD1040FBBADC25156E655D38';
+  }
+
+  try {
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ loginname, login_password })
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+
+    // Capture new JSESSIONID from Set-Cookie if present
+    const setCookie = response.headers.get('set-cookie') || '';
+    const jsessionMatch = setCookie.match(/JSESSIONID=([^;]+)/);
+    if (jsessionMatch) {
+      sessionStore[env] = { jsessionid: jsessionMatch[1], loginname, updatedAt: new Date().toISOString() };
+      console.log(`[${env}] Session refreshed, new JSESSIONID captured`);
+    }
+
+    if (contentType.includes('application/json')) {
+      const data = await response.json();
+      const isValid = data.status === '100' && !!data.transactionId;
+      return res.json({ valid: isValid, status: data.status, message: data.message || '', transactionId: data.transactionId });
+    }
+
+    // Non-JSON response = gateway error, session likely expired
+    return res.json({ valid: false, message: `Gateway returned HTTP ${response.status}` });
+  } catch (error) {
+    console.error(`[${env}] checksession error:`, error.message);
+    return res.json({ valid: false, message: `Network error: ${error.message}` });
+  }
+});
+
+// =============================================================================
 // MERCHANT CALLBACK — Citytouch POSTs payment result here after user pays
 //
 // Flow: User pays via Citytouch mobile/web
