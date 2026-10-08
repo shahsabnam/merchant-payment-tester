@@ -388,6 +388,7 @@ paymentForm.addEventListener('submit', async (e) => {
             };
 
             let targetDeeplink = buildDeeplink(selectedEnv, '');
+            let webFallbackUrl = null;
 
             try {
                 const res = await fetch(getUserloginUrl(), {
@@ -402,22 +403,59 @@ paymentForm.addEventListener('submit', async (e) => {
                 } else if (data.pgwtoken) {
                     targetDeeplink = buildDeeplink(selectedEnv, data.pgwtoken);
                 }
+                // Capture the web URL for fallback (CityBank web portal redirect)
+                if (data.webUrl) {
+                    webFallbackUrl = data.webUrl;
+                }
             } catch (proxyErr) {
                 console.warn(`${selectedEnv} proxy call warning, launching deeplink:`, proxyErr);
             }
 
-            console.log(`[MOBILE] Navigating to:`, targetDeeplink);
+            console.log(`[MOBILE] Launching deeplink:`, targetDeeplink);
+            console.log(`[MOBILE] Web fallback URL:`, webFallbackUrl || getPaymentUrl(selectedEnv));
+
+            // Fire the deeplink
             window.location.href = targetDeeplink;
+
+            // Fallback: if app is not installed or deeplink didn't open,
+            // the page stays visible. After 2.5s redirect to web payment portal.
+            const fallbackTimer = setTimeout(() => {
+                if (!document.hidden) {
+                    console.log('[MOBILE] App did not open — falling back to web portal');
+                    showToast('App not detected. Opening web payment portal...', 'info');
+
+                    if (webFallbackUrl) {
+                        // Direct redirect to CityBank web URL returned by server
+                        window.location.href = webFallbackUrl;
+                    } else {
+                        // Fallback: POST the payment form to the web gateway
+                        paymentForm.action = getPaymentUrl(selectedEnv);
+                        paymentForm.submit();
+                    }
+                }
+            }, 2500);
+
+            // If the user does leave (app opened), cancel the fallback
+            const cancelFallback = () => {
+                if (document.hidden) {
+                    clearTimeout(fallbackTimer);
+                    document.removeEventListener('visibilitychange', cancelFallback);
+                }
+            };
+            document.addEventListener('visibilitychange', cancelFallback);
+
         } catch (err) {
             console.error('Payment launch error:', err);
-            const fallbackLink = buildDeeplink(selectedEnv, '');
-            window.location.href = fallbackLink;
+            // Hard fallback — just submit as web
+            paymentForm.action = getPaymentUrl(selectedEnv);
+            paymentForm.submit();
         } finally {
             setTimeout(() => {
                 paymentBtn.disabled = false;
                 paymentBtn.innerHTML = originalBtnText;
             }, 1000);
         }
+
     }
 });
 
