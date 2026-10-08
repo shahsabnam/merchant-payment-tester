@@ -195,9 +195,9 @@ channelBtns.forEach(btn => {
         const channel = btn.dataset.channel;
         setChannel(channel, true);
         if (channel === 'MOBILE') {
-            showToast('ðŸ“± Channel set to MOBILE (Triggers Citytouch App)', 'info');
+            showToast('Channel set to MOBILE (Triggers Citytouch App)', 'info');
         } else {
-            showToast('ðŸŒ Channel set to WEB (Opens Browser Portal)', 'info');
+            showToast('Channel set to WEB (Opens Browser Portal)', 'info');
         }
     });
 });
@@ -250,7 +250,7 @@ tokenForm.addEventListener('submit', async (e) => {
             // Success
             responseBox.className = 'response-box success';
             responseContent.innerHTML = `
-        <div><strong>Status:</strong> ${data.status} â€” ${data.message}</div>
+        <div><strong>Status:</strong> ${data.status} - ${data.message}</div>
         <div><strong>Transaction ID:</strong> ${data.transactionId}</div>
       `;
 
@@ -273,7 +273,7 @@ tokenForm.addEventListener('submit', async (e) => {
             saveSessionCredentials(selectedEnv, loginname, login_password);
             startSessionTimer(selectedEnv, loginname, login_password);
 
-            showToast('✅ Token generated successfully!', 'success');
+            showToast('Token generated successfully!', 'success');
         } else {
             // API returned an error
             responseBox.className = 'response-box error';
@@ -286,10 +286,10 @@ tokenForm.addEventListener('submit', async (e) => {
     } catch (error) {
         responseBox.className = 'response-box error';
         responseContent.innerHTML = `<div><strong>Error:</strong> ${error.message}</div>`;
-        showToast('Network error â€” is the server running?', 'error');
+        showToast('Network error - is the server running?', 'error');
     } finally {
         tokenBtn.disabled = false;
-        tokenBtnText.innerHTML = 'ðŸ” Generate Token';
+        tokenBtnText.innerHTML = 'Generate Token';
     }
 });
 
@@ -372,10 +372,10 @@ paymentForm.addEventListener('submit', async (e) => {
         const paymentBtn = document.getElementById('paymentBtn');
         const originalBtnText = paymentBtn.innerHTML;
         paymentBtn.disabled = true;
-        paymentBtn.innerHTML = '<div class="spinner"></div> Opening Citytouch App...';
+        paymentBtn.innerHTML = '<div class="spinner"></div> Processing...';
 
         try {
-            showToast(`ðŸš€ Connecting to Citytouch (${selectedEnv})...`, 'info');
+            showToast(`Connecting to ${selectedEnv}...`, 'info');
 
             const payload = {
                 transactionId: transactionIdInput.value.trim(),
@@ -516,7 +516,7 @@ function updateCountdownBadge() {
         badge.style.color = '#4ade80';
     }
 
-    badge.innerHTML = `\u23F1 ${label}`;
+    badge.innerHTML = `Session: ${label}`;
 }
 
 /**
@@ -571,7 +571,7 @@ function showSessionExpiredModal(env, creds) {
             color: #e2e8f0;
         ">
             <div style="text-align:center;margin-bottom:24px;">
-                <div style="font-size:48px;margin-bottom:12px;">\u23F0</div>
+                <div style="font-size:48px;margin-bottom:12px;"></div>
                 <h2 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#f87171;">Session Expired</h2>
                 <p style="margin:0;font-size:14px;color:#94a3b8;">
                     Your <strong>${env}</strong> session expired after 5 minutes.<br>Please re-authenticate to continue.
@@ -603,7 +603,7 @@ function showSessionExpiredModal(env, creds) {
                     flex:1;padding:12px;border:none;border-radius:10px;
                     background:linear-gradient(135deg,#3b82f6,#6366f1);
                     color:#fff;font-size:14px;font-weight:700;cursor:pointer;
-                ">\uD83D\uDD10 Re-Login</button>
+                ">Re-Login</button>
                 <button id="modalDismissBtn" style="
                     padding:12px 18px;border:1px solid rgba(255,255,255,0.15);border-radius:10px;
                     background:transparent;color:#94a3b8;font-size:14px;cursor:pointer;
@@ -634,7 +634,7 @@ function showSessionExpiredModal(env, creds) {
         }
 
         btn.disabled = true;
-        btn.textContent = 'Logging in\u2026';
+        btn.textContent = 'Logging in...';
         errorEl.style.display = 'none';
 
         try {
@@ -667,7 +667,7 @@ function showSessionExpiredModal(env, creds) {
                 startSessionTimer(env, name, pass);
 
                 modal.remove();
-                showToast('\u2705 Re-logged in! Session reset to 5 minutes.', 'success');
+                showToast('Re-logged in! Session reset to 5 minutes.', 'success');
             } else {
                 errorEl.textContent = data.message || 'Login failed. Please check your credentials.';
                 errorEl.style.display = 'block';
@@ -677,7 +677,7 @@ function showSessionExpiredModal(env, creds) {
             errorEl.style.display = 'block';
         } finally {
             btn.disabled = false;
-            btn.textContent = '\uD83D\uDD10 Re-Login';
+            btn.textContent = 'Re-Login';
         }
     });
 
