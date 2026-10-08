@@ -49,7 +49,7 @@ const envPresets = {
     LOCAL: {
         loginname: 'NOV24',
         login_password: 'NOV24Merchant@1234',
-        channel: 'WEB',
+        channel: 'MOBILE',
         merchanRefNo: 'LOCAL',
         txnamount: '23',
         servicetype: 'DARAZ',
@@ -62,7 +62,7 @@ const getPaymentUrl = (env) => `${baseUrls[env] || baseUrls.DEV}${CONTEXT_PATH}/
 
 // ===== STATE =====
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-let selectedChannel = 'MOBILE'; // Default to WEB for seamless merchant payment and return
+let selectedChannel = 'MOBILE';
 let userExplicitChannel = false;
 let selectedEnv = 'UAT';
 let tokens = [];
@@ -154,7 +154,7 @@ function applyPreset(env) {
         if (serviceidInput && preset.serviceid) serviceidInput.value = preset.serviceid;
 
         if (!userExplicitChannel) {
-            setChannel('WEB');
+            setChannel('MOBILE');
         }
 
         // Only set preset resendpoint if user hasn't explicitly cleared it
