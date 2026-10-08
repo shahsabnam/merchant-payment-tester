@@ -435,7 +435,7 @@ document.addEventListener('keydown', (e) => {
 
 // ===== SESSION MANAGEMENT =====
 
-const SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const SESSION_DURATION_MS = 2 * 60 * 1000; // 2 minutes
 const SESSION_KEY = 'pgw_session_creds';
 
 let sessionTimer = null;
@@ -574,7 +574,7 @@ function showSessionExpiredModal(env, creds) {
                 <div style="font-size:48px;margin-bottom:12px;"></div>
                 <h2 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#f87171;">Session Expired</h2>
                 <p style="margin:0;font-size:14px;color:#94a3b8;">
-                    Your <strong>${env}</strong> session expired after 5 minutes.<br>Please re-authenticate to continue.
+                    Your <strong>${env}</strong> session expired after 2 minutes.<br>Please re-authenticate to continue.
                 </p>
             </div>
 
@@ -611,7 +611,7 @@ function showSessionExpiredModal(env, creds) {
             </div>
 
             <p style="text-align:center;margin:16px 0 0;font-size:11px;color:#475569;">
-                Sessions auto-expire after 5 minutes. Credentials saved per environment.
+                Sessions auto-expire after 2 minutes. Credentials saved per environment.
             </p>
         </div>
     `;
@@ -667,7 +667,7 @@ function showSessionExpiredModal(env, creds) {
                 startSessionTimer(env, name, pass);
 
                 modal.remove();
-                showToast('Re-logged in! Session reset to 5 minutes.', 'success');
+                showToast('Re-logged in! Session reset to 2 minutes.', 'success');
             } else {
                 errorEl.textContent = data.message || 'Login failed. Please check your credentials.';
                 errorEl.style.display = 'block';
