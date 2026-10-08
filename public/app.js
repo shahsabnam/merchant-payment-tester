@@ -401,7 +401,12 @@ paymentForm.addEventListener('submit', async (e) => {
                 if (data.targetDeeplink) {
                     targetDeeplink = data.targetDeeplink;
                 } else if (data.pgwtoken) {
-                    targetDeeplink = buildDeeplink(selectedEnv, data.pgwtoken);
+                    // Pass decodeURIComponent to ensure buildDeeplink does not double-encode
+                    let cleanToken = data.pgwtoken;
+                    try {
+                        cleanToken = decodeURIComponent(cleanToken);
+                    } catch (e) {}
+                    targetDeeplink = buildDeeplink(selectedEnv, cleanToken);
                 }
                 // Capture the web URL for fallback (CityBank web portal redirect)
                 if (data.webUrl) {
