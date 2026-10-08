@@ -49,7 +49,7 @@ const envPresets = {
     LOCAL: {
         loginname: 'NOV24',
         login_password: 'NOV24Merchant@1234',
-        channel: 'MOBILE',
+        channel: 'WEB',
         merchanRefNo: 'LOCAL',
         txnamount: '23',
         servicetype: 'DARAZ',
@@ -62,7 +62,7 @@ const getPaymentUrl = (env) => `${baseUrls[env] || baseUrls.DEV}${CONTEXT_PATH}/
 
 // ===== STATE =====
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-let selectedChannel = 'MOBILE';
+let selectedChannel = 'MOBILE'; // Default to WEB for seamless merchant payment and return
 let userExplicitChannel = false;
 let selectedEnv = 'UAT';
 let tokens = [];
@@ -154,7 +154,7 @@ function applyPreset(env) {
         if (serviceidInput && preset.serviceid) serviceidInput.value = preset.serviceid;
 
         if (!userExplicitChannel) {
-            setChannel('MOBILE');
+            setChannel('WEB');
         }
 
         // Only set preset resendpoint if user hasn't explicitly cleared it
@@ -401,12 +401,7 @@ paymentForm.addEventListener('submit', async (e) => {
                 if (data.targetDeeplink) {
                     targetDeeplink = data.targetDeeplink;
                 } else if (data.pgwtoken) {
-                    // Pass decodeURIComponent to ensure buildDeeplink does not double-encode
-                    let cleanToken = data.pgwtoken;
-                    try {
-                        cleanToken = decodeURIComponent(cleanToken);
-                    } catch (e) {}
-                    targetDeeplink = buildDeeplink(selectedEnv, cleanToken);
+                    targetDeeplink = buildDeeplink(selectedEnv, data.pgwtoken);
                 }
                 // Capture the web URL for fallback (CityBank web portal redirect)
                 if (data.webUrl) {

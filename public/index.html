@@ -80,7 +80,18 @@
           </div>
           <div class="card-body">
 
-
+            <!-- Channel Selector -->
+            <div class="channel-selector">
+              <button type="button" class="channel-btn active" data-channel="WEB" id="channelWeb">
+                🌐 WEB (Recommended)
+              </button>
+              <button type="button" class="channel-btn" data-channel="MOBILE" id="channelMobile">
+                📱 MOBILE APP
+              </button>
+            </div>
+            <div id="channelTip" style="margin: -6px 0 16px; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+              💡 <strong>Recommended:</strong> Keep <strong>WEB</strong> selected to pay via City Bank's login portal and automatically return to the merchant in the same session.
+            </div>
 
             <form id="tokenForm">
               <div class="form-group">

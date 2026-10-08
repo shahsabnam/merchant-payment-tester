@@ -166,16 +166,7 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
 
     const location = response.headers.get('location') || '';
     const match = location.match(/[?&]pgwtoken=([^&]+)/);
-    // Note: match[1] is raw value from the Location query string.
-    // If it was %2B...%3D%3D, decode once to get the plain string (e.g. +...==)
-    let pgwtoken = '';
-    if (match) {
-      try {
-        pgwtoken = decodeURIComponent(match[1]);
-      } catch (e) {
-        pgwtoken = match[1];
-      }
-    }
+    const pgwtoken = match ? decodeURIComponent(match[1]) : '';
 
     console.log(`[${env}] userlogin proxy called. Location: ${location.slice(0, 100)}, pgwtoken extracted: ${pgwtoken ? 'YES' : 'NO'}`);
 
@@ -190,10 +181,7 @@ app.post(['/api/userlogin', '/pgwtester/api/userlogin'], express.urlencoded({ ex
     }).toString();
 
     const devDeeplink = `citybank://citybank.com/merchant-gateway/signin?${queryParams}`;
-    // If the bank already returned a full location redirect for UAT, prioritize that valid URL
-    const uatDeeplink = (env === 'UAT' && location.startsWith('http'))
-      ? location
-      : `https://k2.citybankplc.com/merchant-gateway/signin?${queryParams}`;
+    const uatDeeplink = `https://k2.citybankplc.com/merchant-gateway/signin?${queryParams}`;
     const targetDeeplink = env === 'DEV' ? devDeeplink : uatDeeplink;
 
     return res.json({
